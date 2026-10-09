@@ -1,0 +1,63 @@
+--- esp-idf-monitor 1.10.0 on /dev/ttyACM0 115200
+--- Standard input is not a TTY, running in non-interactive mode. Reading commands from stdin: reset, flash, flash-all, app-flash, output, log, timestamps, bootloader, send <text>, sleep <seconds>, expect [--timeout <seconds>] <regex>, exit | Quit: 'exit' command, EOF or Ctrl+C
+--- Command: 'expect --timeout 3 THIS_WILL_NOT_APPEAR'
+I (47) boot: ## Label            Usage          Type ST Offset  ESP-ROM:esp32c3-eco7-20230720
+Build:Jul 20 2023
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xe (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4038b1be
+--- 0x4038b1be: rv_utils_wait_for_intr at /home/ubuntu/esp/esp-idf-v5.4.1/components/riscv/include/riscv/rv_utils.h:62(inlined by) esp_cpu_wait_for_intr at /home/ubuntu/esp/esp-idf-v5.4.1/components/esp_hw_support/cpu.c:62
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5820,len:0x1574
+load:0x403cc710,len:0xc30
+load:0x403ce710,len:0x2f64
+entry 0x403cc71a
+I (24) boot: ESP-IDF v5.4.1-dirty 2nd stage bootloader
+I (24) boot: compile time Oct 14 2025 11:21:05
+I (25) boot: chip revision: v1.1
+I (25) boot: efuse block revision: v1.3
+I (29) boot.esp32c3: SPI Speed      : 80MHz
+I (32) boot.esp32c3: SPI Mode       : DIO
+I (36) boot.esp32c3: SPI Flash Size : 2MB
+I (40) boot: Enabling RNG early entropy source...
+I (44) boot: Partition Table:
+I (47) boot: ## Label            Usage          Type ST Offset   Length
+I (53) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (60) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (66) boot:  2 factory          factory app      00 00 00010000 00100000
+I (73) boot: End of partition table
+I (76) esp_image: segment 0: paddr=00010020 vaddr=3c080020 size=17460h ( 95328) map
+I (99) esp_image: segment 1: paddr=00027488 vaddr=3fc97c00 size=028e0h ( 10464) load
+I (101) esp_image: segment 2: paddr=00029d70 vaddr=40380000 size=062a8h ( 25256) load
+I (107) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=736b0h (472752) map
+I (185) esp_image: segment 4: paddr=000a36d8 vaddr=403862a8 size=11768h ( 71528) load
+I (199) esp_image: segment 5: paddr=000b4e48 vaddr=50000000 size=0021ch (   540) load
+I (207) boot: Loaded app from partition at offset 0x10000
+I (207) boot: Disabling RNG early entropy source...
+I (217) cpu_start: Unicore app
+W (636) clk: 32 kHz XTAL not found, switching to internal 150 kHz oscillator
+I (645) cpu_start: Pro cpu start user code
+I (645) cpu_start: cpu freq: 80000000 Hz
+I (645) app_init: Application information:
+I (646) app_init: Project name:     xrs_code
+I (649) app_init: App version:      1
+I (653) app_init: Compile time:     Oct 28 2025 11:37:00
+I (658) app_init: ELF file SHA256:  f8ae47ba0...
+--- WARNING: Checksum mismatch between flashed and built applications. Checksum of built application is 4f50601149a8f71afde5720d2146b04fd37af0b9712899c69ba818d4373b6530
+I (662) app_init: ESP-IDF:          v5.4.1-dirty
+I (666) efuse_init: Min chip rev:     v0.3
+I (670) efuse_init: Max chip rev:     v1.99 
+I (674) efuse_init: Chip rev:         v1.1
+I (678) heap_init: Initializing. RAM available for dynamic allocation:
+I (684) heap_init: At 3FC9DC40 len 000223C0 (136 KiB): RAM
+I (689) heap_init: At 3FCC0000 len 0001C710 (113 KiB): Retention RAM
+I (695) heap_init: At 3FCDC710 len 0000294C (10 KiB): Retention RAM
+I (701) heap_init: At 5000021C len 00001DCC (7 KiB): RTCRAM
+I (708) spi_flash: detected chip: generic
+I (710) spi_flash: flash io: dio
+W (713) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
+W (726) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (736) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (742) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+--- ERROR: Expect pattern 'THIS_WILL_NOT_APPEAR' timed out after 3.0s, exiting...
+

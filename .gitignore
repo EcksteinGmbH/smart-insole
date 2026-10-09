@@ -1,0 +1,21 @@
+# ESP-IDF build output (regenerate with: idf.py build)
+firmware/build/
+# Component manager output (regenerated from firmware/dependencies.lock)
+firmware/managed_components/
+firmware/sdkconfig.old
+
+# Python
+tools/.venv/
+__pycache__/
+*.pyc
+
+# Claude Code per-user local settings
+.claude/settings.local.json
+
+# Editor / OS
+*.swp
+*~
+.DS_Store
+
+# Office lock files
+~$*

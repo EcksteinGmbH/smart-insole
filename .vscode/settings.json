@@ -1,0 +1,27 @@
+{
+    // 仅本工作区生效
+    "clangd.arguments": [
+        "--compile-commands-dir=/home/ubuntu/Projects/smart-insole/firmware/build",
+        "--query-driver=/home/ubuntu/.espressif/tools/riscv32-esp-elf/**/bin/riscv32-esp-elf-*",
+        "--background-index",
+        "--header-insertion=never"
+    ],
+    // 与 clangd 冲突，本工作区关闭 MS C/C++ 的 IntelliSense
+    "C_Cpp.intelliSenseEngine": "disabled",
+
+    // ESP-IDF 扩展（若安装）的工作区设置
+    "idf.espIdfPath": "/home/ubuntu/esp/esp-idf-v5.4.1",
+    "idf.toolsPath": "/home/ubuntu/.espressif",
+    "idf.port": "/dev/ttyACM0",
+    "idf.flashType": "UART",
+    "idf.adapterTargetName": "esp32c3",
+    "idf.openOcdConfigs": ["board/esp32c3-builtin.cfg"],
+
+    "files.exclude": {
+        "**/build": true
+    },
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/managed_components/**": true
+    }
+}

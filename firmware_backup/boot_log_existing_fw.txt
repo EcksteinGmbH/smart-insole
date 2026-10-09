@@ -1,0 +1,63 @@
+--- esp-idf-monitor 1.10.0 on /dev/ttyACM0 115200
+--- WARNING: No ELF files found. Please provide the ELF file paths, required for binary log decoding.
+--- Standard input is not a TTY, running in non-interactive mode. Reading commands from stdin: reset, flash, flash-all, app-flash, output, log, timestamps, bootloader, send <text>, sleep <seconds>, expect [--timeout <seconds>] <regex>, exit | Quit: 'exit' command, EOF or Ctrl+C
+--- Command: 'reset'
+--- Command: 'sleep 25'
+[0;32mI (107) esp_image: segment 3: paddr=00030020 vaddr=42000020 sizeESP-ROM:esp32c3-eco7-20230720[0m
+Build:Jul 20 2023
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xe (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4038b1be
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5820,len:0x1574
+load:0x403cc710,len:0xc30
+load:0x403ce710,len:0x2f64
+entry 0x403cc71a
+[0;32mI (24) boot: ESP-IDF v5.4.1-dirty 2nd stage bootloader[0m
+[0;32mI (24) boot: compile time Oct 14 2025 11:21:05[0m
+[0;32mI (25) boot: chip revision: v1.1[0m
+[0;32mI (25) boot: efuse block revision: v1.3[0m
+[0;32mI (29) boot.esp32c3: SPI Speed      : 80MHz[0m
+[0;32mI (32) boot.esp32c3: SPI Mode       : DIO[0m
+[0;32mI (36) boot.esp32c3: SPI Flash Size : 2MB[0m
+[0;32mI (40) boot: Enabling RNG early entropy source...[0m
+[0;32mI (44) boot: Partition Table:[0m
+[0;32mI (47) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (53) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (60) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (66) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (73) boot: End of partition table[0m
+[0;32mI (76) esp_image: segment 0: paddr=00010020 vaddr=3c080020 size=17460h ( 95328) map[0m
+[0;32mI (99) esp_image: segment 1: paddr=00027488 vaddr=3fc97c00 size=028e0h ( 10464) load[0m
+[0;32mI (101) esp_image: segment 2: paddr=00029d70 vaddr=40380000 size=062a8h ( 25256) load[0m
+[0;32mI (107) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=736b0h (472752) map[0m
+[0;32mI (185) esp_image: segment 4: paddr=000a36d8 vaddr=403862a8 size=11768h ( 71528) load[0m
+[0;32mI (199) esp_image: segment 5: paddr=000b4e48 vaddr=50000000 size=0021ch (   540) load[0m
+[0;32mI (207) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (207) boot: Disabling RNG early entropy source...[0m
+[0;32mI (216) cpu_start: Unicore app[0m
+[0;33mW (636) clk: 32 kHz XTAL not found, switching to internal 150 kHz oscillator[0m
+[0;32mI (645) cpu_start: Pro cpu start user code[0m
+[0;32mI (645) cpu_start: cpu freq: 80000000 Hz[0m
+[0;32mI (645) app_init: Application information:[0m
+[0;32mI (645) app_init: Project name:     xrs_code[0m
+[0;32mI (649) app_init: App version:      1[0m
+[0;32mI (652) app_init: Compile time:     Oct 28 2025 11:37:00[0m
+[0;32mI (658) app_init: ELF file SHA256:  f8ae47ba0...[0m
+[0;32mI (662) app_init: ESP-IDF:          v5.4.1-dirty[0m
+[0;32mI (666) efuse_init: Min chip rev:     v0.3[0m
+[0;32mI (670) efuse_init: Max chip rev:     v1.99 [0m
+[0;32mI (674) efuse_init: Chip rev:         v1.1[0m
+[0;32mI (678) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (684) heap_init: At 3FC9DC40 len 000223C0 (136 KiB): RAM[0m
+[0;32mI (689) heap_init: At 3FCC0000 len 0001C710 (113 KiB): Retention RAM[0m
+[0;32mI (695) heap_init: At 3FCDC710 len 0000294C (10 KiB): Retention RAM[0m
+[0;32mI (701) heap_init: At 5000021C len 00001DCC (7 KiB): RTCRAM[0m
+[0;32mI (708) spi_flash: detected chip: generic[0m
+[0;32mI (710) spi_flash: flash io: dio[0m
+[0;33mW (713) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;33mW (726) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`[0m
+[0;32mI (736) sleep_gpio: Configure to isolate all GPIO pins in sleep state[0m
+[0;32mI (742) sleep_gpio: Enable automatic switching of GPIO sleep configuration[0m
+--- Command: 'exit'
+

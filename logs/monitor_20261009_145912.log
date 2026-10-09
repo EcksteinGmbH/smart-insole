@@ -1,0 +1,27 @@
+--- esp-idf-monitor 1.10.0 on /dev/ttyACM0 115200
+--- Standard input is not a TTY, running in non-interactive mode. Reading commands from stdin: reset, flash, flash-all, app-flash, output, log, timestamps, bootloader, send <text>, sleep <seconds>, expect [--timeout <seconds>] <regex>, exit | Quit: 'exit' command, EOF or Ctrl+C
+--- Command: 'reset'
+--- Command: 'expect --timeout 10 Partition Table'
+ESP-ROM:esp32c3-eco7-20230720
+Build:Jul 20 2023
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xe (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4038b1be
+--- 0x4038b1be: rv_utils_wait_for_intr at /home/ubuntu/esp/esp-idf-v5.4.1/components/riscv/include/riscv/rv_utils.h:62(inlined by) esp_cpu_wait_for_intr at /home/ubuntu/esp/esp-idf-v5.4.1/components/esp_hw_support/cpu.c:62
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5820,len:0x1574
+load:0x403cc710,len:0xc30
+load:0x403ce710,len:0x2f64
+entry 0x403cc71a
+I (24) boot: ESP-IDF v5.4.1-dirty 2nd stage bootloader
+I (24) boot: compile time Oct 14 2025 11:21:05
+I (25) boot: chip revision: v1.1
+I (25) boot: efuse block revision: v1.3
+I (29) boot.esp32c3: SPI Speed      : 80MHz
+I (32) boot.esp32c3: SPI Mode       : DIO
+I (36) boot.esp32c3: SPI Flash Size : 2MB
+I (40) boot: Enabling RNG early entropy source...
+I (44) boot: Partition Table:
+--- Expect pattern 'Partition Table' matched, continuing...
+--- Command: 'exit'
+

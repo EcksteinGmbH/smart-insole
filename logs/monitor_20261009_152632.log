@@ -1,0 +1,130 @@
+--- esp-idf-monitor 1.10.0 on /dev/ttyACM0 115200
+--- Standard input is not a TTY, running in non-interactive mode. Reading commands from stdin: reset, flash, flash-all, app-flash, output, log, timestamps, bootloader, send <text>, sleep <seconds>, expect [--timeout <seconds>] <regex>, exit | Quit: 'exit' command, EOF or Ctrl+C
+--- Command: 'reset'
+--- Command: 'sleep 15'
+I (107) esp_image: segment 3: paddr=00030020 vaddr=42000020 sizeESP-ROM:esp32c3-eco7-20230720
+Build:Jul 20 2023
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xe (SPI_FAST_FLASH_BOOT)
+Saved PC:0x4038b278
+--- 0x4038b278: rv_utils_wait_for_intr at /home/ubuntu/esp/esp-idf-v5.4.1/components/riscv/include/riscv/rv_utils.h:62(inlined by) esp_cpu_wait_for_intr at /home/ubuntu/esp/esp-idf-v5.4.1/components/esp_hw_support/cpu.c:62
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5820,len:0x1574
+load:0x403cc710,len:0xc3c
+load:0x403ce710,len:0x2f7c
+entry 0x403cc71a
+I (24) boot: ESP-IDF v5.4.1 2nd stage bootloader
+I (24) boot: compile time Oct  9 2026 15:08:43
+I (25) boot: chip revision: v1.1
+I (25) boot: efuse block revision: v1.3
+I (28) boot.esp32c3: SPI Speed      : 80MHz
+I (32) boot.esp32c3: SPI Mode       : DIO
+I (36) boot.esp32c3: SPI Flash Size : 4MB
+I (39) boot: Enabling RNG early entropy source...
+I (44) boot: Partition Table:
+I (46) boot: ## Label            Usage          Type ST Offset   Length
+I (53) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (59) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (66) boot:  2 factory          factory app      00 00 00010000 00100000
+I (72) boot: End of partition table
+I (76) esp_image: segment 0: paddr=00010020 vaddr=3c080020 size=17628h ( 95784) map
+I (98) esp_image: segment 1: paddr=00027650 vaddr=3fc97c00 size=02910h ( 10512) load
+I (101) esp_image: segment 2: paddr=00029f68 vaddr=40380000 size=060b0h ( 24752) load
+I (107) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=74264h (475748) map
+I (185) esp_image: segment 4: paddr=000a428c vaddr=403860b0 size=11b18h ( 72472) load
+I (199) esp_image: segment 5: paddr=000b5dac vaddr=50000000 size=0021ch (   540) load
+I (207) boot: Loaded app from partition at offset 0x10000
+I (207) boot: Disabling RNG early entropy source...
+I (217) cpu_start: Unicore app
+W (636) clk: 32 kHz XTAL not found, switching to internal 150 kHz oscillator
+I (645) cpu_start: Pro cpu start user code
+I (645) cpu_start: cpu freq: 80000000 Hz
+I (646) app_init: Application information:
+I (646) app_init: Project name:     xrs_code
+I (649) app_init: App version:      1
+I (653) app_init: Compile time:     Oct  9 2026 15:08:40
+I (658) app_init: ELF file SHA256:  e2e7a4008...
+I (662) app_init: ESP-IDF:          v5.4.1
+I (666) efuse_init: Min chip rev:     v0.3
+I (670) efuse_init: Max chip rev:     v1.99 
+I (674) efuse_init: Chip rev:         v1.1
+I (678) heap_init: Initializing. RAM available for dynamic allocation:
+I (684) heap_init: At 3FC9DCA0 len 00022360 (136 KiB): RAM
+I (689) heap_init: At 3FCC0000 len 0001C710 (113 KiB): Retention RAM
+I (695) heap_init: At 3FCDC710 len 0000294C (10 KiB): Retention RAM
+I (701) heap_init: At 5000021C len 00001DCC (7 KiB): RTCRAM
+I (708) spi_flash: detected chip: generic
+I (710) spi_flash: flash io: dio
+W (713) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (723) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (729) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (747) pm: Frequency switching config: CPU_MAX: 80, APB_MAX: 80, APB_MIN: 40, Light sleep: DISABLED
+I (748) coexist: coex firmware version: e727207
+I (749) coexist: coexist rom version 74f9620
+I (754) main_task: Started on CPU0
+I (756) main_task: Calling app_main()
+I (759) MOTORX_APP: Initializing motor[0]
+I (763) MOTOR: PWM timer initialized
+I (766) MOTOR: Motor 0 initialized on GPIO 5 (PWM)
+I (771) MOTORX_APP: Initializing MotorX[0]
+I (775) MOTORX: MotorX 0 initialized with motor ID 0
+I (779) MOTORX_APP: Initializing motor[1]
+I (783) MOTOR: Motor 1 initialized on GPIO 6 (PWM)
+I (788) MOTORX_APP: Initializing MotorX[1]
+I (791) MOTORX: MotorX 1 initialized with motor ID 1
+I (796) MOTORX_APP: Initializing motor[2]
+I (800) MOTOR: Motor 2 initialized on GPIO 7 (PWM)
+I (804) MOTORX_APP: Initializing MotorX[2]
+I (808) MOTORX: MotorX 2 initialized with motor ID 2
+I (813) MAIN: Power on or reset
+I (820) pm: Frequency switching config: CPU_MAX: 160, APB_MAX: 80, APB_MIN: 40, Light sleep: ENABLED
+I (825) app_bat: 电池监测模块启动
+I (828) bat_driver: Initializing battery monitor (on-demand sampling)...
+I (835) gpio: GPIO[3]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0 
+I (844) gpio: GPIO[2]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (852) bat_driver: ADC calibration enabled (curve fitting)
+I (857) gpio: GPIO[9]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (865) button: IoT Button Version: 4.1.3
+I (869) gpio: GPIO[10]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (877) led: LED init: GPIO10, active_level=0
+I (881) gpio: GPIO[8]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (889) led: LED init: GPIO8, active_level=0
+I (893) BLE_INIT: BT controller compile version [d74042a]
+W (898) BLE_INIT: 32.768kHz XTAL not detected, fall back to main XTAL as Bluetooth sleep clock
+W (907) BLE_INIT: light sleep mode will not be able to apply when bluetooth is enabled.
+I (915) BLE_INIT: Bluetooth MAC: 30:ed:a0:80:9a:6e
+I (920) phy_init: phy_version 1200,2b7123f9,Feb 18 2025,15:22:21
+I (921) app_bat: 充电状态: 开始充电, [4.105 V, 100.0%]
+I (930) app_bat: 充电状态变化: 开始充电
+I (976) ble: NimBLE Host Task Started
+I (978) imu: LSM6DS3TR-C init (ID=0)
+I (996) ble: Advertising started
+I (997) imu: WHO: 0x6a
+I (1007) imu: LSM6DS3TR-C init (ID=1)
+I (1007) I2C: I2C already initiated
+I (1022) imu: WHO: 0x6a
+I (1036) imu: [IMU0] sleep thresh: 125f mg (FS=4000 mg, reg=2)
+I (1042) imu: [IMU1] sleep thresh: 125f mg (FS=4000 mg, reg=2)
+I (1044) gpio: GPIO[3]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0 
+I (1045) wakeup: Enabling GPIO wakeup on pins GPIO3, mask:0x00000008
+
+I (1493) app_led: app_led_charging_task start...
+I (1493) app_led: 0->1: charging full, led_g on !!!, 100.0%, 4.102V, charging:yes
+I (1727) imu: [0][mg]: 31.35	 -7.44	1005.77	 hz:0.00	 inactive:0
+I (2742) imu: [0][mg]: 31.48	 -7.56	1007.35	 hz:31.31	 inactive:0
+I (3758) imu: [0][mg]: 30.74	 -7.81	1006.50	 hz:45.32	 inactive:0
+I (4774) imu: [0][mg]: 31.72	 -7.69	1007.60	 hz:45.28	 inactive:0
+I (5789) imu: [0][mg]: 31.23	 -7.32	1007.48	 hz:45.28	 inactive:0
+I (6805) imu: [0][mg]: 30.87	 -6.95	1006.74	 hz:45.32	 inactive:0
+I (7821) imu: [0][mg]: 33.18	 -8.30	1009.31	 hz:45.28	 inactive:0
+I (8838) imu: [0][mg]: 31.35	 -8.54	1007.35	 hz:45.28	 inactive:0
+I (9855) imu: [0][mg]: 31.23	 -6.47	1007.35	 hz:45.23	 inactive:0
+I (10858) imu: [IMU1] inactive: 1
+I (10868) imu: [0][mg]: 31.72	 -6.95	1007.96	 hz:45.23	 inactive:0
+I (10871) imu: [IMU0] inactive: 1
+I (11873) imu: [0][mg]: 33.31	 -9.39	998.57	 hz:44.47	 inactive:1
+I (12878) imu: [0][mg]: 30.13	 -8.91	995.15	 hz:12.94	 inactive:1
+I (13883) imu: [0][mg]: 29.16	 -6.10	994.30	 hz:13.93	 inactive:1
+I (14888) imu: [0][mg]: 28.91	 -4.64	995.89	 hz:13.93	 inactive:1
+--- Command: 'exit'
+
