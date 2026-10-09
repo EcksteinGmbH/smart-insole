@@ -29,6 +29,7 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - JTAG：后台 `idf.py openocd`，再 `riscv32-esp-elf-gdb -batch -ex "target extended-remote :3333" -ex "mon reset halt" ... build/xrs_code.elf`
 
 ## 规则
+- Git：每完成一个独立改动就 `git commit`（小步、说明清楚）；`.git/hooks/post-commit` 会在后台自动 push 到 GitHub（EcksteinGmbH/smart-insole，德国侧据此查看代码），失败记录在 `.git/auto-push.log`
 - **禁止**运行交互式 `idf.py monitor` / `menuconfig`（需要 TTY 会卡住）；看日志用 `tools/capture.sh`
 - 改 Kconfig 选项：编辑 `sdkconfig` 后 `idf.py build`，或用 `idf.py menuconfig` 前先问用户
 - ESP-IDF API 以本地 `~/esp/esp-idf-v5.4.1/components/*/include` 与 `examples/` 为准，不凭记忆、不用 v6 文档
