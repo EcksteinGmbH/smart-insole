@@ -9,6 +9,9 @@ tools/.venv/
 __pycache__/
 *.pyc
 
+# Local generator test captures/reports (archive selected results explicitly if needed)
+test_runs/
+
 # Claude Code per-user local settings
 .claude/settings.local.json
 

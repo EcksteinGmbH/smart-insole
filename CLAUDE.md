@@ -13,6 +13,7 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - `firmware_backup/` — 出厂固件整片 flash 备份（`esptool write_flash 0 <bin>` 可恢复），勿删
 - `tools/capture.sh` — 非交互串口日志抓取
 - `tools/ble_test.sh` — BLE 主机端测试（scan / cmd / selftest / stream），venv 在 `tools/.venv`
+- `tools/generator_test.sh` — 线性发电机工作站（WT9011DCL-RF 采集 / 分析 / T0-T1 对比）
 - `.mcp.json` — 项目级 MCP：`espressif-docs`（官方芯片/IDF 文档，已认证；工具 search_espressif_sources，有限额，单次聚焦查询）
 - `logs/` — 抓取的日志
 
@@ -26,6 +27,7 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - 烧录：`idf.py -p /dev/ttyACM0 flash` —— **烧录前必须征得用户同意**（`.claude/settings.local.json` 仅放行这一条命令的原样写法）
 - 日志（根目录）：`tools/capture.sh <秒> [正则] [--no-reset]`（超时退出码 110）
 - BLE（根目录）：`tools/ble_test.sh --address 30:ED:A0:80:9A:6E selftest`（全局参数放子命令前）
+- 发电机测试（根目录）：`tools/generator_test.sh --help`（流程见 `docs/线性发电机测试工作站.md`）
 - JTAG：后台 `idf.py openocd`，再 `riscv32-esp-elf-gdb -batch -ex "target extended-remote :3333" -ex "mon reset halt" ... build/xrs_code.elf`
 
 ## 规则
