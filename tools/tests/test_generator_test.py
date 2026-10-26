@@ -15,13 +15,14 @@ generator_test = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(generator_test)
 
 
-def simulated_args(root, revision="T0", meter_value=5.0, repeat=1):
+def simulated_args(root, revision="T0", meter_value=5.0, repeat=1, meter_max_value=None):
     return Namespace(
         generator="GEN-A",
         revision=revision,
         mode="open",
         repeat=repeat,
         meter_value=meter_value,
+        meter_max_value=meter_max_value if meter_max_value is not None else meter_value + 0.5,
         meter_unit=None,
         meter_model="test-meter",
         meter_range="auto",
@@ -91,6 +92,8 @@ class AnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(metrics["dominant_frequency_hz"], 2.5, delta=0.05)
         self.assertGreater(metrics["velocity_index_mps"], 0)
         self.assertGreater(metrics["normalized_meter_per_mps"], 0)
+        self.assertEqual(metrics["meter_value"], 5.0)
+        self.assertEqual(metrics["meter_max_value"], 5.5)
 
     def test_trial_outputs_and_comparison(self):
         with tempfile.TemporaryDirectory() as root:

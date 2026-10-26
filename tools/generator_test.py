@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """线性发电机测试工作站。
 
-采集 WT9011DCL-RF 串口加速度，登记万用表读数，并生成可追溯的
+采集 WT9011DCL-RF 串口加速度，登记万用表平均/最大显示值，并生成可追溯的
 单次试验报告和结构改造前/后的聚合对比。分析与模拟仅依赖标准库；
 实物采集额外依赖 pyserial。
 """
@@ -144,8 +144,13 @@ def manifest_from_args(args, source):
             "model": args.meter_model,
             "range": args.meter_range,
             "value": args.meter_value,
+            "max_value": getattr(args, "meter_max_value", None),
             "unit": unit,
-            "recording": "manual_single_value",
+            "recording": (
+                "manual_window_average_and_max"
+                if getattr(args, "meter_max_value", None) is not None
+                else "manual_window_average"
+            ),
         },
         "motion": {
             "pre_seconds": args.pre_seconds,
@@ -166,12 +171,12 @@ def ask_meter_value(args):
     if args.meter_value is not None:
         return args.meter_value
     if not sys.stdin.isatty():
-        raise SystemExit("缺少 --meter-value；非交互运行时必须显式提供万用表读数")
+        raise SystemExit("缺少 --meter-value；非交互运行时必须显式提供20秒平均显示值")
     unit = args.meter_unit or default_meter_unit(args.mode)
     label = {"open": "开路电压", "short": "短路电流", "load": "负载电压"}[args.mode]
     while True:
         try:
-            return float(input(f"请输入{label} ({unit}): ").strip())
+            return float(input(f"请输入{label}的20秒平均显示值 ({unit}): ").strip())
         except ValueError:
             print("请输入数字。", file=sys.stderr)
 
@@ -420,7 +425,9 @@ def calculate_metrics(rows, manifest):
     if intervals and gap_count / len(intervals) > 0.05:
         reasons.append("超过 5% 的采样间隔存在掉帧/抖动")
 
-    meter_value = manifest.get("meter", {}).get("value")
+    meter = manifest.get("meter", {})
+    meter_value = meter.get("value")
+    meter_max_value = meter.get("max_value")
     normalized = (
         meter_value / velocity_index
         if meter_value is not None and velocity_index and velocity_index > 0
@@ -445,7 +452,8 @@ def calculate_metrics(rows, manifest):
         "dominant_spectral_power": spectral_power,
         "velocity_index_mps": velocity_index,
         "meter_value": meter_value,
-        "meter_unit": manifest.get("meter", {}).get("unit"),
+        "meter_max_value": meter_max_value,
+        "meter_unit": meter.get("unit"),
         "normalized_meter_per_mps": normalized,
         "clip_count": clip_count,
     }
@@ -498,6 +506,7 @@ def write_trial_summary_csv(path, manifest, metrics):
         "repeat": manifest.get("repeat"),
         "valid": metrics.get("valid"),
         "meter_value": metrics.get("meter_value"),
+        "meter_max_value": metrics.get("meter_max_value"),
         "meter_unit": metrics.get("meter_unit"),
         "sample_rate_hz": metrics.get("sample_rate_hz"),
         "primary_axis": metrics.get("primary_axis"),
@@ -526,7 +535,8 @@ def write_trial_report(path, manifest, metrics):
     ]
     results = [
         ("试次有效", metrics.get("valid"), ""),
-        ("万用表读数", metrics.get("meter_value"), metrics.get("meter_unit", "")),
+        ("20秒平均显示值", metrics.get("meter_value"), metrics.get("meter_unit", "")),
+        ("20秒最大显示值", metrics.get("meter_max_value"), metrics.get("meter_unit", "")),
         ("有效帧率", metrics.get("sample_rate_hz"), "Hz"),
         ("主运动轴", metrics.get("primary_axis"), ""),
         ("主轴加速度 RMS", metrics.get("primary_accel_rms_mps2"), "m/s²"),
@@ -556,7 +566,7 @@ table{{border-collapse:collapse;width:100%;margin:12px 0 24px}}th,td{{border:1px
 .warn{{background:#fff3cd;padding:12px}}.ok{{background:#d9f4e5;padding:12px}}.note{{color:#555}}
 </style></head><body><h1>线性发电机试验报告</h1><h2>试验信息</h2><table>{meta_rows}</table>
 <h2>结果</h2>{warning}<table>{result_rows}</table><img src="acceleration.svg" alt="加速度曲线" style="max-width:100%">
-<p class="note">归一化电气指标用于抵消手摇强度差异，是相对比较量，不等同于效率或输出功率。开路电压与短路电流来自不同试次，不能相乘作为功率。</p>
+<p class="note">归一化电气指标使用20秒平均显示值计算，用于抵消手摇强度差异；它是相对比较量，不等同于效率或输出功率。开路电压与短路电流来自不同试次，不能相乘作为功率。</p>
 <p class="note">备注：{html.escape(str(manifest.get('notes') or '—'))}</p></body></html>"""
     path.write_text(document, encoding="utf-8")
 
@@ -721,7 +731,7 @@ def compare_roots(args):
 <style>body{{font-family:system-ui,sans-serif;max-width:1200px;margin:32px auto}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #ddd;padding:7px}}th{{background:#f5f7f9}}</style></head>
 <body><h1>线性发电机 T0/T1 对比</h1><p>判定门槛：每个条件至少 {args.minimum_trials} 次有效重复，归一化保持率 ≥ {args.minimum_retention:.1f}%，归一化 CV ≤ {args.maximum_cv:.1f}%。</p>
 <table><thead><tr><th>工况</th><th>单位</th><th>波形</th><th>测试点</th><th>T0 n</th><th>T1 n</th><th>T0 中位数</th><th>T1 中位数</th><th>原始保持率 %</th><th>归一化保持率 %</th><th>T0 CV %</th><th>T1 CV %</th><th>结论</th></tr></thead><tbody>{html_rows}</tbody></table>
-<p>归一化值是万用表读数 ÷ 速度激励指标，仅用于同一测试方法下的前后相对比较。</p></body></html>"""
+<p>归一化值是20秒平均显示值 ÷ 速度激励指标，仅用于同一测试方法下的前后相对比较。</p></body></html>"""
     (output_dir / "comparison.html").write_text(document, encoding="utf-8")
     return result
 
@@ -731,7 +741,8 @@ def add_trial_arguments(parser):
     parser.add_argument("--revision", required=True, help="结构版本，如 T0 / T1")
     parser.add_argument("--mode", required=True, choices=("open", "short", "load"), help="电气工况")
     parser.add_argument("--repeat", type=int, default=1, help="同工况重复编号")
-    parser.add_argument("--meter-value", type=float, help="万用表读数；capture 缺省时交互询问")
+    parser.add_argument("--meter-value", type=float, help="20秒平均显示值；capture 缺省时交互询问")
+    parser.add_argument("--meter-max-value", type=float, help="20秒最大显示值")
     parser.add_argument("--meter-unit", help="默认 open/load=V，short=mA")
     parser.add_argument("--meter-model", default="unknown", help="万用表型号")
     parser.add_argument("--meter-range", default="auto", help="万用表量程")
@@ -814,6 +825,8 @@ def save_and_analyze(args, manifest, rows):
     trial_dir, summary = save_trial(args, manifest, rows)
     metrics = summary["metrics"]
     print(f"试次目录: {trial_dir}")
+    print(f"20秒平均显示值: {fmt(metrics.get('meter_value'))} {metrics.get('meter_unit') or ''}")
+    print(f"20秒最大显示值: {fmt(metrics.get('meter_max_value'))} {metrics.get('meter_unit') or ''}")
     print(f"主频: {fmt(metrics.get('dominant_frequency_hz'))} Hz")
     print(f"速度激励指标: {fmt(metrics.get('velocity_index_mps'))} m/s")
     print(f"归一化电气指标: {fmt(metrics.get('normalized_meter_per_mps'))}")
@@ -846,6 +859,8 @@ def command_simulate(args):
     validate_durations(args)
     if args.meter_value is None:
         args.meter_value = 20.0 if args.mode == "short" else 5.0
+    if args.meter_max_value is None:
+        args.meter_max_value = args.meter_value
     rows = simulate_rows(args)
     manifest = manifest_from_args(args, "simulation")
     manifest["simulation"] = {

@@ -168,12 +168,14 @@
           <div class="legend"><span><i style="background:#1769aa"></i>X</span><span><i style="background:#d04444"></i>Y</span><span><i style="background:#27885b"></i>Z</span></div>
 
           <div id="meterBox" class="meter-box hidden">
-            <h3 style="margin-top:0">输入万用表读数</h3>
-            <p id="meterPrompt">读取稳定值后输入。</p>
+            <h3 style="margin-top:0">输入本轮万用表结果</h3>
+            <p id="meterPrompt">填写手摇阶段的平均显示值和最大显示值。</p>
             <div class="row">
-              <label>读数<input id="meterValue" type="number" step="any" min="0"></label>
-              <label>单位<input id="meterUnit" readonly></label>
+              <label>20秒平均显示值（<span id="meterAverageUnit">—</span>）<input id="meterValue" type="number" step="any" min="0"></label>
+              <label>20秒最大显示值（<span id="meterMaxUnit">—</span>）<input id="meterMaxValue" type="number" step="any" min="0"></label>
             </div>
+            <input id="meterUnit" type="hidden">
+            <p class="footer-note">归一化指标使用平均显示值计算；最大显示值只作为峰值参考。</p>
             <div class="actions">
               <button id="saveTrial" class="success">保存本轮结果</button>
               <button id="discardTrial" class="danger">放弃本轮并重新测试</button>
@@ -183,7 +185,8 @@
           <div id="resultBox" class="hidden">
             <h3>本轮结果</h3>
             <div class="metrics result-metrics">
-              <div class="metric"><span>万用表读数</span><strong id="resultMeter">—</strong></div>
+              <div class="metric"><span>20秒平均显示值</span><strong id="resultMeter">—</strong></div>
+              <div class="metric"><span>20秒最大显示值</span><strong id="resultMeterMax">—</strong></div>
               <div class="metric"><span>加速度 RMS</span><strong id="resultAccel">—</strong></div>
               <div class="metric"><span>手摇主频</span><strong id="resultFreq">—</strong></div>
               <div class="metric"><span>速度激励指标</span><strong id="resultVelocity">—</strong></div>
@@ -212,11 +215,11 @@
       <canvas id="historyChart"></canvas>
       <div class="table-wrap" style="margin-top:14px">
         <table>
-          <thead><tr><th>时间</th><th>样品</th><th>版本</th><th>工况</th><th>重复</th><th>读数</th><th>加速度 RMS</th><th>主频</th><th>速度激励</th><th>归一化指标</th><th>有效</th><th>数据</th></tr></thead>
-          <tbody id="historyBody"><tr><td colspan="12">暂无数据</td></tr></tbody>
+          <thead><tr><th>时间</th><th>样品</th><th>版本</th><th>工况</th><th>重复</th><th>平均显示值</th><th>最大显示值</th><th>加速度 RMS</th><th>主频</th><th>速度激励</th><th>归一化指标</th><th>有效</th><th>数据</th></tr></thead>
+          <tbody id="historyBody"><tr><td colspan="13">暂无数据</td></tr></tbody>
         </table>
       </div>
-      <p class="footer-note">图中每个点代表一次万用表读数。普通万用表不提供瞬时电压/电流波形；网页的实时曲线来自 WT9011DCL-RF 三轴加速度。删除的试次会移入本机 <code>test_runs/.trash</code>，不再出现在历史中。</p>
+      <p class="footer-note">图中每个点代表一次测试的20秒平均显示值。最大显示值保存在表格和下载文件中。普通万用表不提供瞬时电压/电流波形；网页的实时曲线来自 WT9011DCL-RF 三轴加速度。删除的试次会移入本机 <code>test_runs/.trash</code>，不再出现在历史中。</p>
     </section>
 
   </main>
@@ -374,8 +377,10 @@
       $("meterBox").classList.toggle("hidden", status.state !== "awaiting_meter");
       if (status.state === "awaiting_meter") {
         $("meterUnit").value = status.meter_unit || "";
+        $("meterAverageUnit").textContent = status.meter_unit || "—";
+        $("meterMaxUnit").textContent = status.meter_unit || "—";
         $("meterPrompt").textContent = status.mode === "short"
-          ? "停止摇动后读取短路电流稳定值。" : "读取开路电压稳定值。";
+          ? "填写手摇阶段的短路电流平均显示值和最大显示值。" : "填写手摇阶段的开路电压平均显示值和最大显示值。";
       }
       if (status.result) showResult(status.result);
       drawLive(status.live || []);
@@ -385,6 +390,7 @@
     }
 
     function format(value, digits = 3) {
+      if (value === null || value === undefined || value === "") return "—";
       const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toFixed(digits) : "—";
     }
 
@@ -392,6 +398,7 @@
       const metrics = result.metrics || {};
       $("resultBox").classList.remove("hidden");
       $("resultMeter").textContent = `${format(metrics.meter_value)} ${metrics.meter_unit || ""}`;
+      $("resultMeterMax").textContent = `${format(metrics.meter_max_value)} ${metrics.meter_unit || ""}`;
       $("resultAccel").textContent = `${format(metrics.primary_accel_rms_mps2)} m/s²`;
       $("resultFreq").textContent = `${format(metrics.dominant_frequency_hz)} Hz`;
       $("resultVelocity").textContent = `${format(metrics.velocity_index_mps)} m/s`;
@@ -408,6 +415,7 @@
       try {
         const status = await api("/api/capture/discard", {method:"POST", body:"{}"});
         $("meterValue").value = "";
+        $("meterMaxValue").value = "";
         $("meterBox").classList.add("hidden");
         $("resultBox").classList.add("hidden");
         clearError();
@@ -421,7 +429,7 @@
       if (demo) Object.assign(payload, {pre_seconds: 1, active_seconds: 6, post_seconds: 1});
       try {
         const status = await api(demo ? "/api/demo/start" : "/api/capture/start", {method:"POST", body:JSON.stringify(payload)});
-        $("resultBox").classList.add("hidden"); $("meterValue").value = "";
+        $("resultBox").classList.add("hidden"); $("meterValue").value = ""; $("meterMaxValue").value = "";
         updateStatus(status);
       } catch (error) { showError(error); }
     }
@@ -442,12 +450,13 @@
           <td>${escapeHtml(record.generator)}</td><td>${escapeHtml(record.revision)}</td>
           <td>${record.mode === "open" ? "开路" : "短路"}</td><td>${escapeHtml(record.repeat)}</td>
           <td>${format(record.meter_value)} ${escapeHtml(record.meter_unit)}</td>
+          <td>${format(record.meter_max_value)} ${escapeHtml(record.meter_unit)}</td>
           <td>${format(record.accel_rms)} m/s²</td><td>${format(record.frequency_hz)} Hz</td>
           <td>${format(record.velocity_index)} m/s</td>
           <td>${format(record.normalized)} ${escapeHtml(record.meter_unit)}/(m/s)</td>
           <td class="${record.valid ? "result-ok" : "result-bad"}">${record.valid ? "是" : "否"}</td>
           <td><a href="${escapeHtml(record.trial_summary_url)}" download>汇总</a> · <a href="${escapeHtml(record.raw_csv_url)}" download>原始</a> · <a href="${escapeHtml(record.report_url)}" target="_blank" rel="noopener">详情</a> · <button class="danger compact delete-trial" data-trial="${escapeHtml(record.trial)}">删除</button></td></tr>`).join("")
-          : '<tr><td colspan="12">暂无数据</td></tr>';
+          : '<tr><td colspan="13">暂无数据</td></tr>';
         drawHistory();
       } catch (error) { showError(error); }
     }
@@ -457,7 +466,7 @@
       const selected = historyRecords.filter(record => record.mode === mode && Number.isFinite(Number(record.meter_value))).reverse();
       const points = selected.map((record, index) => ({t:index + 1, value:Number(record.meter_value)}));
       drawSeries($("historyChart"), points, [{key:"value", color: mode === "open" ? "#1769aa" : "#9a5b00"}],
-        mode === "open" ? "完成测试后显示开路电压趋势" : "完成测试后显示短路电流趋势");
+        mode === "open" ? "完成测试后显示开路电压平均值趋势" : "完成测试后显示短路电流平均值趋势");
     }
 
     $("refreshPorts").onclick = loadPorts;
@@ -468,7 +477,10 @@
     $("retestTrial").onclick = () => resetTrial(false);
     $("saveTrial").onclick = async () => {
       try {
-        const result = await api("/api/capture/finalize", {method:"POST", body:JSON.stringify({meter_value:$("meterValue").value})});
+        if ($("meterValue").value === "" || $("meterMaxValue").value === "") {
+          throw new Error("请同时输入20秒平均显示值和最大显示值");
+        }
+        const result = await api("/api/capture/finalize", {method:"POST", body:JSON.stringify({meter_value:$("meterValue").value, meter_max_value:$("meterMaxValue").value})});
         showResult(result); await pollStatus();
       } catch (error) { showError(error); }
     };

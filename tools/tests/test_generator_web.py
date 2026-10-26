@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import tempfile
 import time
 import unittest
@@ -54,10 +55,14 @@ class WebValidationTests(unittest.TestCase):
             while manager.snapshot()["state"] == "capturing" and time.monotonic() < deadline:
                 time.sleep(0.02)
             self.assertEqual(manager.snapshot()["state"], "awaiting_meter")
-            result = manager.finalize({"meter_value": 5.16})
+            result = manager.finalize({"meter_value": 5.16, "meter_max_value": 6.02})
             self.assertTrue(Path(result["trial_dir"], "report.html").exists())
             self.assertTrue(Path(result["trial_dir"], "trial_summary.csv").exists())
             self.assertTrue(Path(result["trial_dir"], "imu_raw.csv").exists())
+            saved_summary = json.loads(Path(result["trial_dir"], "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved_summary["metrics"]["meter_max_value"], 6.02)
+            self.assertIn("meter_max_value", Path(result["trial_dir"], "trial_summary.csv").read_text(encoding="utf-8"))
+            self.assertIn("20秒最大显示值", Path(result["trial_dir"], "report.html").read_text(encoding="utf-8"))
             self.assertTrue(result["trial_summary_url"].endswith("/trial_summary.csv"))
             self.assertTrue(result["raw_csv_url"].endswith("/imu_raw.csv"))
             self.assertEqual(manager.snapshot()["state"], "complete")
@@ -65,6 +70,7 @@ class WebValidationTests(unittest.TestCase):
             self.assertEqual(len(records), 1)
             self.assertEqual(records[0]["generator"], "GEN-WEB")
             self.assertEqual(records[0]["meter_value"], 5.16)
+            self.assertEqual(records[0]["meter_max_value"], 6.02)
             self.assertIsNotNone(records[0]["accel_rms"])
             self.assertIsNotNone(records[0]["velocity_index"])
             self.assertIsNotNone(records[0]["normalized"])
@@ -90,7 +96,7 @@ class WebValidationTests(unittest.TestCase):
             deadline = time.monotonic() + 3
             while manager.snapshot()["state"] == "capturing" and time.monotonic() < deadline:
                 time.sleep(0.02)
-            result = manager.finalize({"meter_value": 5.16})
+            result = manager.finalize({"meter_value": 5.16, "meter_max_value": 6.02})
             deleted = generator_web.trash_trial(root, result["trial"])
             self.assertEqual(deleted["deleted"], result["trial"])
             self.assertEqual(generator_web.history_records(root), [])
@@ -102,6 +108,40 @@ class WebValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaisesRegex(ValueError, "路径无效"):
                 generator_web.trash_trial(root, "../outside")
+
+    def test_rejects_maximum_below_average(self):
+        with tempfile.TemporaryDirectory() as root:
+            manager = generator_web.CaptureManager(generator_test, root)
+            manager.start(demo_payload(), demo=True)
+            deadline = time.monotonic() + 3
+            while manager.snapshot()["state"] == "capturing" and time.monotonic() < deadline:
+                time.sleep(0.02)
+            with self.assertRaisesRegex(ValueError, "不能小于平均显示值"):
+                manager.finalize({"meter_value": 5.16, "meter_max_value": 4.8})
+
+    def test_history_reads_legacy_summary_without_maximum(self):
+        with tempfile.TemporaryDirectory() as root:
+            trial = Path(root, "GEN-OLD", "T0", "legacy_open_r01")
+            trial.mkdir(parents=True)
+            summary = {
+                "manifest": {
+                    "created_at": "2026-10-01T10:00:00+08:00",
+                    "generator": "GEN-OLD",
+                    "revision": "T0",
+                    "mode": "open",
+                    "repeat": 1,
+                    "waveform": "ac",
+                },
+                "metrics": {
+                    "meter_value": 5.16,
+                    "meter_unit": "V",
+                    "valid": True,
+                },
+            }
+            (trial / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            records = generator_web.history_records(root)
+            self.assertEqual(records[0]["meter_value"], 5.16)
+            self.assertIsNone(records[0]["meter_max_value"])
 
 
 class SerialPortDetectionTests(unittest.TestCase):

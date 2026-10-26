@@ -19,7 +19,7 @@ PHASE_LABELS = {
     "static_pre": "保持静止",
     "active": "按节拍手摇",
     "static_post": "停止并保持静止",
-    "awaiting_meter": "输入万用表读数",
+    "awaiting_meter": "输入万用表平均值和最大值",
     "saving": "正在保存结果",
     "complete": "试验完成",
     "stopped": "已停止",
@@ -70,6 +70,7 @@ def build_capture_args(payload, output_root, demo=False):
         mode=mode,
         repeat=integer(payload, "repeat", 1, 1, 999),
         meter_value=None,
+        meter_max_value=None,
         meter_unit=payload.get("meter_unit") or ("mA" if mode == "short" else "V"),
         meter_model=str(payload.get("meter_model") or "unknown").strip(),
         meter_range=str(payload.get("meter_range") or "unknown").strip(),
@@ -288,12 +289,16 @@ class CaptureManager:
 
     def finalize(self, payload):
         meter_value = number(payload, "meter_value", None, 0.0)
+        meter_max_value = number(payload, "meter_max_value", None, 0.0)
         if meter_value is None:
-            raise ValueError("请输入万用表读数")
+            raise ValueError("请输入20秒平均显示值")
+        if meter_max_value is not None and meter_max_value < meter_value:
+            raise ValueError("20秒最大显示值不能小于平均显示值")
         with self.lock:
             if self.state["state"] != "awaiting_meter" or self.rows is None:
                 raise ValueError("当前没有等待保存的试验")
             self.args.meter_value = meter_value
+            self.args.meter_max_value = meter_max_value
             if payload.get("notes"):
                 self.args.notes = str(payload["notes"]).strip()
             args = self.args
@@ -388,6 +393,7 @@ def history_records(output_root, limit=200):
                     "repeat": manifest.get("repeat"),
                     "waveform": manifest.get("waveform"),
                     "meter_value": metrics.get("meter_value"),
+                    "meter_max_value": metrics.get("meter_max_value"),
                     "meter_unit": metrics.get("meter_unit"),
                     "accel_rms": metrics.get("primary_accel_rms_mps2"),
                     "frequency_hz": metrics.get("dominant_frequency_hz"),
