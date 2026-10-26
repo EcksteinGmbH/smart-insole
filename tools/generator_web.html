@@ -57,6 +57,7 @@
     .phase-message { color: var(--muted); min-height: 24px; }
     progress { width: 100%; height: 12px; accent-color: var(--blue); }
     .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+    .result-metrics { grid-template-columns: repeat(3, 1fr); }
     .metric { background: #f7f9fb; border-radius: 10px; padding: 12px; min-height: 74px; }
     .metric span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
     .metric strong { font-size: 18px; }
@@ -86,7 +87,7 @@
 <body>
   <header>
     <h1>线性发电机测试工作站</h1>
-    <p>WT9011DCL-RF 加速度采集 · Pogo Pin 开路/短路测试 · T0/T1 对比</p>
+    <p>WT9011DCL-RF 加速度采集 · Pogo Pin 开路/短路测试 · 单次结果归档</p>
   </header>
   <main>
     <div id="globalError" class="notice error hidden"></div>
@@ -109,7 +110,7 @@
           <div class="notice warn">开始前确认发电机与鞋垫主板、电池隔离。短路测试必须先停止摇动，再把红表笔移到带保险丝的 mA/A 插孔。</div>
           <div class="row">
             <label>发电机编号<input id="generator" value="GEN-01" required></label>
-            <label>结构版本<select id="revision"><option>T0</option><option>T1</option></select></label>
+            <label>结构版本<input id="revision" value="T0" placeholder="例如 T0、T1、T2"></label>
           </div>
           <div class="row">
             <label>测试项目<select id="mode"><option value="open">开路电压</option><option value="short">短路电流</option></select></label>
@@ -172,18 +173,24 @@
               <label>读数<input id="meterValue" type="number" step="any" min="0"></label>
               <label>单位<input id="meterUnit" readonly></label>
             </div>
-            <button id="saveTrial" class="success">保存并生成报告</button>
+            <button id="saveTrial" class="success">保存本轮结果</button>
           </div>
 
           <div id="resultBox" class="hidden">
             <h3>本轮结果</h3>
-            <div class="metrics">
+            <div class="metrics result-metrics">
               <div class="metric"><span>万用表读数</span><strong id="resultMeter">—</strong></div>
               <div class="metric"><span>加速度 RMS</span><strong id="resultAccel">—</strong></div>
               <div class="metric"><span>手摇主频</span><strong id="resultFreq">—</strong></div>
+              <div class="metric"><span>速度激励指标</span><strong id="resultVelocity">—</strong></div>
+              <div class="metric"><span>归一化电气指标</span><strong id="resultNormalized">—</strong></div>
               <div class="metric"><span>质量检查</span><strong id="resultValid">—</strong></div>
             </div>
-            <a id="reportLink" class="button-link primary" target="_blank" rel="noopener">打开完整报告</a>
+            <div class="actions">
+              <a id="summaryCsvLink" class="button-link primary" download>下载最终汇总 CSV</a>
+              <a id="rawCsvLink" class="button-link secondary" download>下载原始加速度 CSV</a>
+              <a id="reportLink" class="button-link secondary" target="_blank" rel="noopener">查看本轮详情</a>
+            </div>
           </div>
         </div>
       </section>
@@ -200,30 +207,13 @@
       <canvas id="historyChart"></canvas>
       <div class="table-wrap" style="margin-top:14px">
         <table>
-          <thead><tr><th>时间</th><th>样品</th><th>版本</th><th>工况</th><th>重复</th><th>读数</th><th>主频</th><th>有效</th><th>报告</th></tr></thead>
-          <tbody id="historyBody"><tr><td colspan="9">暂无数据</td></tr></tbody>
+          <thead><tr><th>时间</th><th>样品</th><th>版本</th><th>工况</th><th>重复</th><th>读数</th><th>加速度 RMS</th><th>主频</th><th>速度激励</th><th>归一化指标</th><th>有效</th><th>数据</th></tr></thead>
+          <tbody id="historyBody"><tr><td colspan="12">暂无数据</td></tr></tbody>
         </table>
       </div>
       <p class="footer-note">图中每个点代表一次万用表读数。普通万用表不提供瞬时电压/电流波形；网页的实时曲线来自 WT9011DCL-RF 三轴加速度。</p>
     </section>
 
-    <section class="card">
-      <h2>5. 生成 T0/T1 对比</h2>
-      <div class="row">
-        <label>发电机编号<input id="compareGenerator" value="GEN-01"></label>
-        <label>最低有效重复次数<input id="minimumTrials" type="number" min="1" value="5"></label>
-      </div>
-      <div class="row">
-        <label>基线版本<input id="baselineRevision" value="T0"></label>
-        <label>新结构版本<input id="candidateRevision" value="T1"></label>
-      </div>
-      <div class="row">
-        <label>最低归一化保持率（%）<input id="minimumRetention" type="number" value="90"></label>
-        <label>最大 CV（%）<input id="maximumCv" type="number" value="15"></label>
-      </div>
-      <button id="compareButton" class="primary">生成对比报告</button>
-      <a id="compareLink" class="button-link secondary hidden" target="_blank" rel="noopener">打开对比报告</a>
-    </section>
   </main>
 
   <script>
@@ -395,9 +385,13 @@
       $("resultMeter").textContent = `${format(metrics.meter_value)} ${metrics.meter_unit || ""}`;
       $("resultAccel").textContent = `${format(metrics.primary_accel_rms_mps2)} m/s²`;
       $("resultFreq").textContent = `${format(metrics.dominant_frequency_hz)} Hz`;
+      $("resultVelocity").textContent = `${format(metrics.velocity_index_mps)} m/s`;
+      $("resultNormalized").textContent = `${format(metrics.normalized_meter_per_mps)} ${metrics.meter_unit || ""}/(m/s)`;
       $("resultValid").textContent = metrics.valid ? "通过" : "需复测";
       $("resultValid").className = metrics.valid ? "result-ok" : "result-bad";
       $("reportLink").href = result.report_url;
+      $("summaryCsvLink").href = result.trial_summary_url;
+      $("rawCsvLink").href = result.raw_csv_url;
     }
 
     async function start(demo) {
@@ -426,10 +420,13 @@
           <tr><td>${escapeHtml((record.created_at || "").replace("T", " ").slice(0, 19))}</td>
           <td>${escapeHtml(record.generator)}</td><td>${escapeHtml(record.revision)}</td>
           <td>${record.mode === "open" ? "开路" : "短路"}</td><td>${escapeHtml(record.repeat)}</td>
-          <td>${format(record.meter_value)} ${escapeHtml(record.meter_unit)}</td><td>${format(record.frequency_hz)} Hz</td>
+          <td>${format(record.meter_value)} ${escapeHtml(record.meter_unit)}</td>
+          <td>${format(record.accel_rms)} m/s²</td><td>${format(record.frequency_hz)} Hz</td>
+          <td>${format(record.velocity_index)} m/s</td>
+          <td>${format(record.normalized)} ${escapeHtml(record.meter_unit)}/(m/s)</td>
           <td class="${record.valid ? "result-ok" : "result-bad"}">${record.valid ? "是" : "否"}</td>
-          <td><a href="${escapeHtml(record.report_url)}" target="_blank" rel="noopener">打开</a></td></tr>`).join("")
-          : '<tr><td colspan="9">暂无数据</td></tr>';
+          <td><a href="${escapeHtml(record.trial_summary_url)}" download>汇总</a> · <a href="${escapeHtml(record.raw_csv_url)}" download>原始</a> · <a href="${escapeHtml(record.report_url)}" target="_blank" rel="noopener">详情</a></td></tr>`).join("")
+          : '<tr><td colspan="12">暂无数据</td></tr>';
         drawHistory();
       } catch (error) { showError(error); }
     }
@@ -453,17 +450,6 @@
       } catch (error) { showError(error); }
     };
     $("refreshHistory").onclick = loadHistory; $("historyMode").onchange = drawHistory;
-    $("compareButton").onclick = async () => {
-      clearError();
-      try {
-        const result = await api("/api/compare", {method:"POST", body:JSON.stringify({
-          generator:$("compareGenerator").value, baseline_revision:$("baselineRevision").value,
-          candidate_revision:$("candidateRevision").value, minimum_trials:$("minimumTrials").value,
-          minimum_retention:$("minimumRetention").value, maximum_cv:$("maximumCv").value
-        })});
-        $("compareLink").href = result.report_url; $("compareLink").classList.remove("hidden");
-      } catch (error) { showError(error); }
-    };
     window.addEventListener("resize", () => { drawLive([]); drawHistory(); });
     updateRange(); loadPorts(); loadHistory(); pollStatus(); setInterval(pollStatus, 300);
   </script>

@@ -55,11 +55,19 @@ class WebValidationTests(unittest.TestCase):
             self.assertEqual(manager.snapshot()["state"], "awaiting_meter")
             result = manager.finalize({"meter_value": 5.16})
             self.assertTrue(Path(result["trial_dir"], "report.html").exists())
+            self.assertTrue(Path(result["trial_dir"], "trial_summary.csv").exists())
+            self.assertTrue(Path(result["trial_dir"], "imu_raw.csv").exists())
+            self.assertTrue(result["trial_summary_url"].endswith("/trial_summary.csv"))
+            self.assertTrue(result["raw_csv_url"].endswith("/imu_raw.csv"))
             self.assertEqual(manager.snapshot()["state"], "complete")
             records = generator_web.history_records(root)
             self.assertEqual(len(records), 1)
             self.assertEqual(records[0]["generator"], "GEN-WEB")
             self.assertEqual(records[0]["meter_value"], 5.16)
+            self.assertIsNotNone(records[0]["accel_rms"])
+            self.assertIsNotNone(records[0]["velocity_index"])
+            self.assertIsNotNone(records[0]["normalized"])
+            self.assertTrue(records[0]["trial_summary_url"].endswith("/trial_summary.csv"))
 
 
 if __name__ == "__main__":

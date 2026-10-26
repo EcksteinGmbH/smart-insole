@@ -8,7 +8,6 @@ import time
 import webbrowser
 from argparse import Namespace
 from collections import deque
-from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -20,7 +19,7 @@ PHASE_LABELS = {
     "active": "按节拍手摇",
     "static_post": "停止并保持静止",
     "awaiting_meter": "输入万用表读数",
-    "saving": "正在生成报告",
+    "saving": "正在保存结果",
     "complete": "试验完成",
     "stopped": "已停止",
     "error": "发生错误",
@@ -288,7 +287,7 @@ class CaptureManager:
                 state="saving",
                 phase="saving",
                 phase_label=PHASE_LABELS["saving"],
-                message="正在分析并生成报告",
+                message="正在分析并保存本轮结果",
             )
         try:
             manifest = self.core.manifest_from_args(args, meta["source"])
@@ -313,6 +312,8 @@ class CaptureManager:
                 "trial_dir": str(trial_dir),
                 "report_url": f"/runs/{relative}/report.html",
                 "summary_url": f"/runs/{relative}/summary.json",
+                "trial_summary_url": f"/runs/{relative}/trial_summary.csv",
+                "raw_csv_url": f"/runs/{relative}/imu_raw.csv",
                 "metrics": summary["metrics"],
             }
             with self.lock:
@@ -320,7 +321,7 @@ class CaptureManager:
                     state="complete",
                     phase="complete",
                     phase_label=PHASE_LABELS["complete"],
-                    message="报告已生成",
+                    message="本轮结果已保存",
                     result=result,
                 )
             return result
@@ -368,42 +369,18 @@ def history_records(output_root, limit=200):
                     "meter_unit": metrics.get("meter_unit"),
                     "accel_rms": metrics.get("primary_accel_rms_mps2"),
                     "frequency_hz": metrics.get("dominant_frequency_hz"),
+                    "velocity_index": metrics.get("velocity_index_mps"),
                     "normalized": metrics.get("normalized_meter_per_mps"),
                     "valid": metrics.get("valid"),
                     "report_url": f"/runs/{relative}/report.html",
+                    "trial_summary_url": f"/runs/{relative}/trial_summary.csv",
+                    "raw_csv_url": f"/runs/{relative}/imu_raw.csv",
                 }
             )
         except (KeyError, OSError, ValueError, TypeError):
             continue
     records.sort(key=lambda item: item.get("created_at") or "", reverse=True)
     return records[:limit]
-
-
-def create_comparison(core, output_root, payload):
-    generator = required_text(payload, "generator")
-    baseline_revision = required_text(payload, "baseline_revision")
-    candidate_revision = required_text(payload, "candidate_revision")
-    root = Path(output_root).expanduser().resolve()
-    baseline = root / core.slug(generator) / core.slug(baseline_revision)
-    candidate = root / core.slug(generator) / core.slug(candidate_revision)
-    if not baseline.exists() or not candidate.exists():
-        raise ValueError("找不到对应的 T0/T1 试次目录")
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    relative = Path("comparisons") / f"{core.slug(generator)}_{stamp}"
-    output_dir = root / relative
-    args = Namespace(
-        baseline=str(baseline),
-        candidate=str(candidate),
-        output_dir=str(output_dir),
-        minimum_retention=number(payload, "minimum_retention", 90.0, 0.0, 1000.0),
-        maximum_cv=number(payload, "maximum_cv", 15.0, 0.0, 1000.0),
-        minimum_trials=integer(payload, "minimum_trials", 5, 1, 100),
-    )
-    result = core.compare_roots(args)
-    return {
-        "report_url": f"/runs/{relative.as_posix()}/comparison.html",
-        "result": result,
-    }
 
 
 def build_handler(core, manager, index_path):
@@ -482,8 +459,6 @@ def build_handler(core, manager, index_path):
                     self.send_json(manager.stop())
                 elif path == "/api/capture/finalize":
                     self.send_json(manager.finalize(payload))
-                elif path == "/api/compare":
-                    self.send_json(create_comparison(core, manager.output_root, payload))
                 else:
                     self.send_error(404)
             except (ValueError, json.JSONDecodeError) as exc:

@@ -13,7 +13,7 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - `firmware_backup/` — 出厂固件整片 flash 备份（`esptool write_flash 0 <bin>` 可恢复），勿删
 - `tools/capture.sh` — 非交互串口日志抓取
 - `tools/ble_test.sh` — BLE 主机端测试（scan / cmd / selftest / stream），venv 在 `tools/.venv`
-- `tools/generator_test.sh` — 线性发电机工作站（本地网页 / WT9011DCL-RF 采集 / 分析 / T0-T1 对比）
+- `tools/generator_test.sh` — 线性发电机工作站（本地网页 / WT9011DCL-RF 采集 / 分析 / 单次结果归档）
 - `.mcp.json` — 项目级 MCP：`espressif-docs`（官方芯片/IDF 文档，已认证；工具 search_espressif_sources，有限额，单次聚焦查询）
 - `logs/` — 抓取的日志
 
