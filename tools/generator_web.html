@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>线性发电机测试工作站</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #dfe5ec;
+      --panel: #ffffff;
+      --bg: #f4f7fa;
+      --blue: #1769aa;
+      --blue-soft: #e9f3fb;
+      --green: #19764b;
+      --green-soft: #e4f5eb;
+      --amber: #9a5b00;
+      --amber-soft: #fff1d6;
+      --red: #b42318;
+      --red-soft: #feeceb;
+      --shadow: 0 8px 24px rgba(25, 38, 56, .08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { background: #102a43; color: #fff; padding: 24px max(24px, calc((100vw - 1240px) / 2)); }
+    header h1 { margin: 0 0 6px; font-size: 25px; }
+    header p { margin: 0; color: #cbd8e5; }
+    main { max-width: 1240px; margin: 22px auto 56px; padding: 0 20px; }
+    .grid { display: grid; grid-template-columns: minmax(310px, .8fr) minmax(440px, 1.5fr); gap: 18px; align-items: start; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; }
+    .card h2 { font-size: 18px; margin: 0 0 16px; }
+    .card h3 { font-size: 15px; margin: 18px 0 10px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    input, select, textarea { width: 100%; margin-top: 5px; border: 1px solid #cbd5df; border-radius: 8px; padding: 9px 10px; background: #fff; color: var(--ink); font: inherit; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #b9dcf7; border-color: var(--blue); }
+    textarea { min-height: 68px; resize: vertical; }
+    details { margin: 4px 0 14px; }
+    details summary { cursor: pointer; color: var(--blue); font-size: 14px; }
+    button, .button-link { border: 0; border-radius: 9px; padding: 10px 15px; font-weight: 650; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .primary { color: #fff; background: var(--blue); }
+    .secondary { color: var(--blue); background: var(--blue-soft); }
+    .danger { color: var(--red); background: var(--red-soft); }
+    .success { color: #fff; background: var(--green); }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 4px; }
+    .notice { border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.55; margin-bottom: 14px; }
+    .notice.warn { background: var(--amber-soft); color: #694100; }
+    .notice.info { background: var(--blue-soft); color: #164e78; }
+    .notice.error { background: var(--red-soft); color: var(--red); }
+    .status-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .pill { border-radius: 999px; padding: 5px 10px; font-size: 12px; background: #eef2f6; color: #475467; }
+    .pill.good { background: var(--green-soft); color: var(--green); }
+    .pill.bad { background: var(--red-soft); color: var(--red); }
+    .phase { font-size: 28px; font-weight: 760; margin: 8px 0 4px; }
+    .phase-message { color: var(--muted); min-height: 24px; }
+    progress { width: 100%; height: 12px; accent-color: var(--blue); }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+    .metric { background: #f7f9fb; border-radius: 10px; padding: 12px; min-height: 74px; }
+    .metric span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .metric strong { font-size: 18px; }
+    canvas { width: 100%; height: 290px; display: block; background: #fbfcfd; border: 1px solid var(--line); border-radius: 10px; }
+    .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+    .legend i { display: inline-block; width: 14px; height: 3px; margin-right: 5px; vertical-align: middle; }
+    .hidden { display: none !important; }
+    .meter-box { border: 2px solid #f1c46b; background: #fffaf0; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 9px 7px; white-space: nowrap; }
+    th { color: var(--muted); font-weight: 650; }
+    .table-wrap { overflow-x: auto; }
+    .result-ok { color: var(--green); }
+    .result-bad { color: var(--red); }
+    .footer-note { color: var(--muted); font-size: 12px; margin-top: 12px; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .row { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: 1fr; }
+      header { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>线性发电机测试工作站</h1>
+    <p>WT9011DCL-RF 加速度采集 · Pogo Pin 开路/短路测试 · T0/T1 对比</p>
+  </header>
+  <main>
+    <div id="globalError" class="notice error hidden"></div>
+    <div class="grid">
+      <section>
+        <div class="card">
+          <div class="status-line">
+            <h2 style="margin:0">1. 设备连接</h2>
+            <span id="rfBadge" class="pill">正在检查</span>
+          </div>
+          <label>RF USB 适配器串口
+            <select id="port"><option value="">正在扫描……</option></select>
+          </label>
+          <div id="portHint" class="notice info">WT9011DCL-RF 使用配套 RF 主机，不是电脑蓝牙。</div>
+          <button id="refreshPorts" class="secondary">重新扫描设备</button>
+        </div>
+
+        <div class="card">
+          <h2>2. 试验配置</h2>
+          <div class="notice warn">开始前确认发电机与鞋垫主板、电池隔离。短路测试必须先停止摇动，再把红表笔移到带保险丝的 mA/A 插孔。</div>
+          <div class="row">
+            <label>发电机编号<input id="generator" value="GEN-01" required></label>
+            <label>结构版本<select id="revision"><option>T0</option><option>T1</option></select></label>
+          </div>
+          <div class="row">
+            <label>测试项目<select id="mode"><option value="open">开路电压</option><option value="short">短路电流</option></select></label>
+            <label>重复编号<input id="repeat" type="number" min="1" value="1"></label>
+          </div>
+          <div class="row">
+            <label>输出类型<select id="waveform"><option value="">请选择</option><option value="dc">整流后 DC</option><option value="ac">线圈原始 AC</option></select></label>
+            <label>建议万用表量程<input id="meterRange" value="确认 AC/DC 后自动填写"></label>
+          </div>
+          <div class="row">
+            <label>万用表型号<input id="meterModel" placeholder="例如 Fluke 17B+"></label>
+            <label>测试人员<input id="operator" placeholder="姓名"></label>
+          </div>
+          <label>备注<textarea id="notes" placeholder="传感器固定方式、接线或异常情况"></textarea></label>
+          <details>
+            <summary>高级参数</summary>
+            <div class="row" style="margin-top:12px">
+              <label>静止前段（秒）<input id="preSeconds" type="number" step="0.5" min="0" value="3"></label>
+              <label>手摇阶段（秒）<input id="activeSeconds" type="number" step="1" min="5" value="20"></label>
+            </div>
+            <div class="row">
+              <label>静止后段（秒）<input id="postSeconds" type="number" step="0.5" min="0" value="3"></label>
+              <label>目标频率（Hz）<input id="targetFrequency" type="number" step="0.1" min="0.1" value="2.5"></label>
+            </div>
+            <div class="row">
+              <label>RF 从机 ID（可空）<input id="deviceId" type="number" min="0" max="255" placeholder="自动识别"></label>
+              <label>串口波特率<input id="baud" type="number" value="460800"></label>
+            </div>
+          </details>
+          <div class="actions">
+            <button id="startCapture" class="primary">开始正式采集</button>
+            <button id="startDemo" class="secondary">运行8秒演示</button>
+            <button id="stopCapture" class="danger" disabled>停止</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="card">
+          <div class="status-line">
+            <h2 style="margin:0">3. 实时加速度</h2>
+            <span id="captureBadge" class="pill">空闲</span>
+          </div>
+          <div id="phase" class="phase">等待开始</div>
+          <div id="phaseMessage" class="phase-message">配置参数后开始测试</div>
+          <progress id="progress" value="0" max="1"></progress>
+          <div class="metrics">
+            <div class="metric"><span>经过时间</span><strong id="elapsed">0.0 s</strong></div>
+            <div class="metric"><span>采样帧数</span><strong id="sampleCount">0</strong></div>
+            <div class="metric"><span>RF 设备 ID</span><strong id="deviceIdLive">—</strong></div>
+            <div class="metric"><span>当前工况</span><strong id="modeLive">—</strong></div>
+          </div>
+          <canvas id="liveChart"></canvas>
+          <div class="legend"><span><i style="background:#1769aa"></i>X</span><span><i style="background:#d04444"></i>Y</span><span><i style="background:#27885b"></i>Z</span></div>
+
+          <div id="meterBox" class="meter-box hidden">
+            <h3 style="margin-top:0">输入万用表读数</h3>
+            <p id="meterPrompt">读取稳定值后输入。</p>
+            <div class="row">
+              <label>读数<input id="meterValue" type="number" step="any" min="0"></label>
+              <label>单位<input id="meterUnit" readonly></label>
+            </div>
+            <button id="saveTrial" class="success">保存并生成报告</button>
+          </div>
+
+          <div id="resultBox" class="hidden">
+            <h3>本轮结果</h3>
+            <div class="metrics">
+              <div class="metric"><span>万用表读数</span><strong id="resultMeter">—</strong></div>
+              <div class="metric"><span>加速度 RMS</span><strong id="resultAccel">—</strong></div>
+              <div class="metric"><span>手摇主频</span><strong id="resultFreq">—</strong></div>
+              <div class="metric"><span>质量检查</span><strong id="resultValid">—</strong></div>
+            </div>
+            <a id="reportLink" class="button-link primary" target="_blank" rel="noopener">打开完整报告</a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="status-line">
+        <h2 style="margin:0">4. 历史结果与趋势</h2>
+        <div class="actions" style="margin:0">
+          <select id="historyMode" style="width:auto;margin:0"><option value="open">开路电压</option><option value="short">短路电流</option></select>
+          <button id="refreshHistory" class="secondary">刷新</button>
+        </div>
+      </div>
+      <canvas id="historyChart"></canvas>
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th>时间</th><th>样品</th><th>版本</th><th>工况</th><th>重复</th><th>读数</th><th>主频</th><th>有效</th><th>报告</th></tr></thead>
+          <tbody id="historyBody"><tr><td colspan="9">暂无数据</td></tr></tbody>
+        </table>
+      </div>
+      <p class="footer-note">图中每个点代表一次万用表读数。普通万用表不提供瞬时电压/电流波形；网页的实时曲线来自 WT9011DCL-RF 三轴加速度。</p>
+    </section>
+
+    <section class="card">
+      <h2>5. 生成 T0/T1 对比</h2>
+      <div class="row">
+        <label>发电机编号<input id="compareGenerator" value="GEN-01"></label>
+        <label>最低有效重复次数<input id="minimumTrials" type="number" min="1" value="5"></label>
+      </div>
+      <div class="row">
+        <label>基线版本<input id="baselineRevision" value="T0"></label>
+        <label>新结构版本<input id="candidateRevision" value="T1"></label>
+      </div>
+      <div class="row">
+        <label>最低归一化保持率（%）<input id="minimumRetention" type="number" value="90"></label>
+        <label>最大 CV（%）<input id="maximumCv" type="number" value="15"></label>
+      </div>
+      <button id="compareButton" class="primary">生成对比报告</button>
+      <a id="compareLink" class="button-link secondary hidden" target="_blank" rel="noopener">打开对比报告</a>
+    </section>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let historyRecords = [];
+    let lastState = "idle";
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {"Content-Type": "application/json", ...(options.headers || {})}
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `请求失败 (${response.status})`);
+      return data;
+    }
+
+    function showError(error) {
+      $("globalError").textContent = error.message || String(error);
+      $("globalError").classList.remove("hidden");
+      window.scrollTo({top: 0, behavior: "smooth"});
+    }
+
+    function clearError() { $("globalError").classList.add("hidden"); }
+
+    function formPayload() {
+      return {
+        generator: $("generator").value.trim(), revision: $("revision").value,
+        mode: $("mode").value, repeat: $("repeat").value,
+        waveform: $("waveform").value, meter_range: $("meterRange").value,
+        meter_model: $("meterModel").value, operator: $("operator").value,
+        notes: $("notes").value, port: $("port").value,
+        pre_seconds: $("preSeconds").value, active_seconds: $("activeSeconds").value,
+        post_seconds: $("postSeconds").value, target_frequency: $("targetFrequency").value,
+        device_id: $("deviceId").value, baud: $("baud").value
+      };
+    }
+
+    function updateRange() {
+      const mode = $("mode").value;
+      const waveform = $("waveform").value;
+      if (!waveform) {
+        $("meterRange").value = "先确认 AC/DC";
+        return;
+      }
+      const prefix = waveform === "dc" ? "DC" : "AC";
+      $("meterRange").value = mode === "open" ? `${prefix} 20 V` : `${prefix} 200 mA`;
+    }
+
+    async function loadPorts() {
+      try {
+        const data = await api("/api/ports");
+        const select = $("port");
+        select.innerHTML = "";
+        if (!data.ports.length) {
+          select.innerHTML = '<option value="">未发现 USB 串口</option>';
+          $("rfBadge").textContent = "未连接";
+          $("rfBadge").className = "pill bad";
+          $("portHint").textContent = "未检测到 RF 适配器。请插入适配器并使用支持数据的 USB 线。";
+        } else {
+          data.ports.forEach(port => {
+            const option = document.createElement("option");
+            option.value = port.device;
+            option.textContent = `${port.device} — ${port.description}${port.recommended ? "（推荐）" : ""}`;
+            if (port.recommended) option.selected = true;
+            select.appendChild(option);
+          });
+          $("rfBadge").textContent = data.rf_detected ? "RF 已连接" : "发现串口，需确认";
+          $("rfBadge").className = data.rf_detected ? "pill good" : "pill";
+          $("portHint").textContent = data.rf_detected ? "已检测到 CH340 类 RF 主机。" : "发现 USB 串口，但没有识别为常见 CH340 RF 主机。";
+        }
+      } catch (error) { showError(error); }
+    }
+
+    function resizeCanvas(canvas, height = 290) {
+      const ratio = window.devicePixelRatio || 1;
+      const width = Math.max(320, canvas.clientWidth);
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      return {ctx, width, height};
+    }
+
+    function drawSeries(canvas, series, definitions, emptyText) {
+      const {ctx, width, height} = resizeCanvas(canvas);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fbfcfd"; ctx.fillRect(0, 0, width, height);
+      if (!series.length) {
+        ctx.fillStyle = "#98a2b3"; ctx.font = "14px system-ui";
+        ctx.textAlign = "center"; ctx.fillText(emptyText, width / 2, height / 2); return;
+      }
+      const pad = {l: 48, r: 18, t: 20, b: 32};
+      const xs = series.map((point, index) => point.t ?? index);
+      let values = [];
+      definitions.forEach(def => series.forEach(point => {
+        const value = Number(point[def.key]); if (Number.isFinite(value)) values.push(value);
+      }));
+      let minY = Math.min(...values), maxY = Math.max(...values);
+      if (minY === maxY) { minY -= 1; maxY += 1; }
+      const margin = (maxY - minY) * .08; minY -= margin; maxY += margin;
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const xSpan = maxX - minX || 1, ySpan = maxY - minY || 1;
+      ctx.strokeStyle = "#e5e9ef"; ctx.lineWidth = 1;
+      ctx.fillStyle = "#667085"; ctx.font = "11px system-ui"; ctx.textAlign = "right";
+      for (let i = 0; i <= 4; i++) {
+        const y = pad.t + (height - pad.t - pad.b) * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(width - pad.r, y); ctx.stroke();
+        const value = maxY - ySpan * i / 4;
+        ctx.fillText(value.toFixed(2), pad.l - 7, y + 4);
+      }
+      definitions.forEach(def => {
+        ctx.strokeStyle = def.color; ctx.lineWidth = 1.6; ctx.beginPath();
+        let started = false;
+        series.forEach((point, index) => {
+          const value = Number(point[def.key]); if (!Number.isFinite(value)) return;
+          const xValue = xs[index];
+          const x = pad.l + (xValue - minX) / xSpan * (width - pad.l - pad.r);
+          const y = pad.t + (maxY - value) / ySpan * (height - pad.t - pad.b);
+          if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      });
+      ctx.fillStyle = "#667085"; ctx.textAlign = "left";
+      ctx.fillText(String(minX.toFixed ? minX.toFixed(1) : minX), pad.l, height - 10);
+      ctx.textAlign = "right"; ctx.fillText(String(maxX.toFixed ? maxX.toFixed(1) : maxX), width - pad.r, height - 10);
+    }
+
+    function drawLive(points) {
+      drawSeries($("liveChart"), points,
+        [{key:"x", color:"#1769aa"}, {key:"y", color:"#d04444"}, {key:"z", color:"#27885b"}],
+        "开始采集后显示 X / Y / Z 加速度曲线");
+    }
+
+    function updateStatus(status) {
+      $("phase").textContent = status.phase_label;
+      $("phaseMessage").textContent = status.message || "";
+      $("progress").value = status.progress || 0;
+      $("elapsed").textContent = `${Number(status.elapsed_s || 0).toFixed(1)} / ${Number(status.total_s || 0).toFixed(1)} s`;
+      $("sampleCount").textContent = status.sample_count || 0;
+      $("deviceIdLive").textContent = status.device_id ?? "—";
+      $("modeLive").textContent = status.mode === "open" ? "开路" : status.mode === "short" ? "短路" : "—";
+      $("captureBadge").textContent = status.state;
+      $("captureBadge").className = `pill ${status.state === "complete" ? "good" : status.state === "error" ? "bad" : ""}`;
+      const busy = ["capturing", "awaiting_meter", "saving"].includes(status.state);
+      $("startCapture").disabled = busy;
+      $("startDemo").disabled = busy;
+      $("stopCapture").disabled = status.state !== "capturing";
+      $("meterBox").classList.toggle("hidden", status.state !== "awaiting_meter");
+      if (status.state === "awaiting_meter") {
+        $("meterUnit").value = status.meter_unit || "";
+        $("meterPrompt").textContent = status.mode === "short"
+          ? "停止摇动后读取短路电流稳定值。" : "读取开路电压稳定值。";
+      }
+      if (status.result) showResult(status.result);
+      drawLive(status.live || []);
+      if (status.state === "error" && lastState !== "error") showError(new Error(status.error || status.message));
+      if (status.state === "complete" && lastState !== "complete") loadHistory();
+      lastState = status.state;
+    }
+
+    function format(value, digits = 3) {
+      const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toFixed(digits) : "—";
+    }
+
+    function showResult(result) {
+      const metrics = result.metrics || {};
+      $("resultBox").classList.remove("hidden");
+      $("resultMeter").textContent = `${format(metrics.meter_value)} ${metrics.meter_unit || ""}`;
+      $("resultAccel").textContent = `${format(metrics.primary_accel_rms_mps2)} m/s²`;
+      $("resultFreq").textContent = `${format(metrics.dominant_frequency_hz)} Hz`;
+      $("resultValid").textContent = metrics.valid ? "通过" : "需复测";
+      $("resultValid").className = metrics.valid ? "result-ok" : "result-bad";
+      $("reportLink").href = result.report_url;
+    }
+
+    async function start(demo) {
+      clearError();
+      const payload = formPayload();
+      if (demo) Object.assign(payload, {pre_seconds: 1, active_seconds: 6, post_seconds: 1});
+      try {
+        const status = await api(demo ? "/api/demo/start" : "/api/capture/start", {method:"POST", body:JSON.stringify(payload)});
+        $("resultBox").classList.add("hidden"); $("meterValue").value = "";
+        updateStatus(status);
+      } catch (error) { showError(error); }
+    }
+
+    async function pollStatus() {
+      try { updateStatus(await api("/api/status")); } catch (_) { /* server may be stopping */ }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
+    }
+
+    async function loadHistory() {
+      try {
+        const data = await api("/api/history"); historyRecords = data.records || [];
+        $("historyBody").innerHTML = historyRecords.length ? historyRecords.map(record => `
+          <tr><td>${escapeHtml((record.created_at || "").replace("T", " ").slice(0, 19))}</td>
+          <td>${escapeHtml(record.generator)}</td><td>${escapeHtml(record.revision)}</td>
+          <td>${record.mode === "open" ? "开路" : "短路"}</td><td>${escapeHtml(record.repeat)}</td>
+          <td>${format(record.meter_value)} ${escapeHtml(record.meter_unit)}</td><td>${format(record.frequency_hz)} Hz</td>
+          <td class="${record.valid ? "result-ok" : "result-bad"}">${record.valid ? "是" : "否"}</td>
+          <td><a href="${escapeHtml(record.report_url)}" target="_blank" rel="noopener">打开</a></td></tr>`).join("")
+          : '<tr><td colspan="9">暂无数据</td></tr>';
+        drawHistory();
+      } catch (error) { showError(error); }
+    }
+
+    function drawHistory() {
+      const mode = $("historyMode").value;
+      const selected = historyRecords.filter(record => record.mode === mode && Number.isFinite(Number(record.meter_value))).reverse();
+      const points = selected.map((record, index) => ({t:index + 1, value:Number(record.meter_value)}));
+      drawSeries($("historyChart"), points, [{key:"value", color: mode === "open" ? "#1769aa" : "#9a5b00"}],
+        mode === "open" ? "完成测试后显示开路电压趋势" : "完成测试后显示短路电流趋势");
+    }
+
+    $("refreshPorts").onclick = loadPorts;
+    $("mode").onchange = updateRange; $("waveform").onchange = updateRange;
+    $("startCapture").onclick = () => start(false); $("startDemo").onclick = () => start(true);
+    $("stopCapture").onclick = async () => { try { updateStatus(await api("/api/capture/stop", {method:"POST", body:"{}"})); } catch (e) { showError(e); } };
+    $("saveTrial").onclick = async () => {
+      try {
+        const result = await api("/api/capture/finalize", {method:"POST", body:JSON.stringify({meter_value:$("meterValue").value})});
+        showResult(result); await pollStatus();
+      } catch (error) { showError(error); }
+    };
+    $("refreshHistory").onclick = loadHistory; $("historyMode").onchange = drawHistory;
+    $("compareButton").onclick = async () => {
+      clearError();
+      try {
+        const result = await api("/api/compare", {method:"POST", body:JSON.stringify({
+          generator:$("compareGenerator").value, baseline_revision:$("baselineRevision").value,
+          candidate_revision:$("candidateRevision").value, minimum_trials:$("minimumTrials").value,
+          minimum_retention:$("minimumRetention").value, maximum_cv:$("maximumCv").value
+        })});
+        $("compareLink").href = result.report_url; $("compareLink").classList.remove("hidden");
+      } catch (error) { showError(error); }
+    };
+    window.addEventListener("resize", () => { drawLive([]); drawHistory(); });
+    updateRange(); loadPorts(); loadHistory(); pollStatus(); setInterval(pollStatus, 300);
+  </script>
+</body>
+</html>

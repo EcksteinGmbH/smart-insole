@@ -216,7 +216,7 @@ def resolve_port(requested):
     raise SystemExit(f"无法唯一确定 RF 主机串口（发现: {found}），请使用 --port 指定")
 
 
-def capture_rows(args):
+def capture_rows(args, on_frame=None, on_phase=None, on_progress=None, stop_event=None):
     try:
         import serial
     except ImportError as exc:
@@ -238,7 +238,11 @@ def capture_rows(args):
             elapsed = time.monotonic() - start_mono
             if elapsed >= total:
                 break
+            if stop_event is not None and stop_event.is_set():
+                break
             phase = phase_at(elapsed, args.pre_seconds, args.active_seconds)
+            if on_progress is not None:
+                on_progress(elapsed, total, phase)
             if phase != phase_seen:
                 prompts = {
                     "static_pre": "保持静止（采集零偏）",
@@ -247,6 +251,8 @@ def capture_rows(args):
                 }
                 print(f"[{elapsed:6.2f}s] {prompts[phase]}")
                 phase_seen = phase
+                if on_phase is not None:
+                    on_phase(phase, elapsed)
             data = device.read(device.in_waiting or 1)
             for frame in parser.feed(data):
                 if selected_id is None:
@@ -262,6 +268,10 @@ def capture_rows(args):
                     }
                 )
                 rows.append(frame)
+                if on_frame is not None:
+                    on_frame(frame, elapsed, total)
+    if stop_event is not None and stop_event.is_set():
+        return rows, port, selected_id, parser.discarded_bytes
     if not rows:
         raise SystemExit("未收到有效 WT9011DCL-RF 数据帧；请检查串口、波特率、RF 配对和设备 ID")
     print(f"收到 {len(rows)} 帧；丢弃 {parser.discarded_bytes} 个非帧字节")
@@ -761,6 +771,13 @@ def build_parser():
     compare.add_argument("--maximum-cv", type=float, default=15.0)
     compare.add_argument("--minimum-trials", type=int, default=5)
     compare.set_defaults(handler=command_compare)
+
+    web = subparsers.add_parser("web", help="启动本地网页工作站")
+    web.add_argument("--host", default="127.0.0.1", help="监听地址；默认仅本机可访问")
+    web.add_argument("--port", type=int, default=8765, help="网页端口")
+    web.add_argument("--output-root", default="test_runs", help="试次数据根目录")
+    web.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
+    web.set_defaults(handler=command_web)
     return parser
 
 
@@ -772,12 +789,17 @@ def validate_durations(args):
         raise SystemExit("--active-seconds 必须大于 0")
 
 
-def save_and_analyze(args, manifest, rows):
+def save_trial(args, manifest, rows):
     trial_dir = create_trial_dir(args)
     manifest["trial_dir"] = str(trial_dir)
     write_json(trial_dir / "manifest.json", manifest)
     write_raw_csv(trial_dir / "imu_raw.csv", rows)
     summary = analyze_trial(trial_dir)
+    return trial_dir, summary
+
+
+def save_and_analyze(args, manifest, rows):
+    trial_dir, summary = save_trial(args, manifest, rows)
     metrics = summary["metrics"]
     print(f"试次目录: {trial_dir}")
     print(f"主频: {fmt(metrics.get('dominant_frequency_hz'))} Hz")
@@ -839,6 +861,16 @@ def command_compare(args):
         )
     print(f"对比报告: {Path(args.output_dir).resolve() / 'comparison.html'}")
     return 0 if result["rows"] and all(row["verdict"] == "通过" for row in result["rows"]) else 2
+
+
+def command_web(args):
+    import importlib.util
+
+    path = Path(__file__).with_name("generator_web.py")
+    spec = importlib.util.spec_from_file_location("generator_web", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.run_server(sys.modules[__name__], args)
 
 
 def main():
