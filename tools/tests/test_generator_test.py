@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from argparse import Namespace
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "generator_test.py"
@@ -58,6 +60,23 @@ class ParserTests(unittest.TestCase):
         self.assertAlmostEqual(frames[0]["roll_deg"], -90.0)
         self.assertAlmostEqual(frames[0]["battery_v"], 3.95)
         self.assertEqual(parser.discarded_bytes, 5)
+
+
+class SerialPortTests(unittest.TestCase):
+    def test_identifies_and_selects_nrf52_rf_host(self):
+        port = SimpleNamespace(
+            device="/dev/ttyACM0",
+            vid=0x1915,
+            pid=0x521A,
+            description="nRF52 USB CDC BLE Demo",
+        )
+        self.assertEqual(generator_test.rf_adapter_name(port), "WT9011DCL-RF nRF52 RF 主机")
+        with patch.object(generator_test, "list_serial_ports", return_value=[port]):
+            self.assertEqual(generator_test.resolve_port(None), "/dev/ttyACM0")
+
+    def test_keeps_ch340_rf_host_support(self):
+        port = SimpleNamespace(device="/dev/ttyUSB0", vid=0x1A86, pid=0x7523)
+        self.assertEqual(generator_test.rf_adapter_name(port), "CH340 RF 主机")
 
 
 class AnalysisTests(unittest.TestCase):

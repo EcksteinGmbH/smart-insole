@@ -23,6 +23,8 @@ from pathlib import Path
 
 PACKET_SIZE = 29
 DEFAULT_BAUD = 460800
+CH340_VENDOR_ID = 0x1A86
+NRF52_RF_ADAPTER = (0x1915, 0x521A)
 CSV_FIELDS = [
     "host_time_iso",
     "elapsed_s",
@@ -203,13 +205,23 @@ def list_serial_ports():
     return list(list_ports.comports())
 
 
+def rf_adapter_name(port):
+    """Return the supported WT9011DCL-RF host type for a serial port."""
+
+    if (port.vid, port.pid) == NRF52_RF_ADAPTER:
+        return "WT9011DCL-RF nRF52 RF 主机"
+    if port.vid == CH340_VENDOR_ID:
+        return "CH340 RF 主机"
+    return None
+
+
 def resolve_port(requested):
     if requested:
         return requested
     ports = list_serial_ports()
-    ch340 = [p.device for p in ports if p.vid == 0x1A86]
-    if len(ch340) == 1:
-        return ch340[0]
+    rf_hosts = [p.device for p in ports if rf_adapter_name(p)]
+    if len(rf_hosts) == 1:
+        return rf_hosts[0]
     if len(ports) == 1:
         return ports[0].device
     found = ", ".join(p.device for p in ports) or "无"

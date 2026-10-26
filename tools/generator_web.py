@@ -335,12 +335,14 @@ def serial_ports(core):
     for port in core.list_serial_ports():
         if port.vid is None and not port.device.startswith(("/dev/ttyUSB", "/dev/ttyACM")):
             continue
+        adapter_name = core.rf_adapter_name(port)
         ports.append(
             {
                 "device": port.device,
                 "description": port.description,
                 "vid_pid": f"{port.vid:04x}:{port.pid:04x}" if port.vid is not None else None,
-                "recommended": port.vid == 0x1A86,
+                "rf_adapter": adapter_name,
+                "recommended": adapter_name is not None,
             }
         )
     return {"ports": ports, "rf_detected": any(port["recommended"] for port in ports)}

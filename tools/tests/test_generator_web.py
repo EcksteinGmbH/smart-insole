@@ -3,6 +3,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 
 TOOLS_DIR = Path(__file__).resolve().parents[1]
@@ -68,6 +69,40 @@ class WebValidationTests(unittest.TestCase):
             self.assertIsNotNone(records[0]["velocity_index"])
             self.assertIsNotNone(records[0]["normalized"])
             self.assertTrue(records[0]["trial_summary_url"].endswith("/trial_summary.csv"))
+
+
+class SerialPortDetectionTests(unittest.TestCase):
+    def test_marks_nrf52_adapter_as_detected_rf_host(self):
+        port = SimpleNamespace(
+            device="/dev/ttyACM0",
+            vid=0x1915,
+            pid=0x521A,
+            description="nRF52 USB CDC BLE Demo",
+        )
+        core = SimpleNamespace(
+            list_serial_ports=lambda: [port],
+            rf_adapter_name=generator_test.rf_adapter_name,
+        )
+        result = generator_web.serial_ports(core)
+        self.assertTrue(result["rf_detected"])
+        self.assertTrue(result["ports"][0]["recommended"])
+        self.assertEqual(result["ports"][0]["rf_adapter"], "WT9011DCL-RF nRF52 RF 主机")
+
+    def test_does_not_label_unknown_serial_port_as_rf_host(self):
+        port = SimpleNamespace(
+            device="/dev/ttyACM1",
+            vid=0x1234,
+            pid=0x5678,
+            description="Other serial device",
+        )
+        core = SimpleNamespace(
+            list_serial_ports=lambda: [port],
+            rf_adapter_name=generator_test.rf_adapter_name,
+        )
+        result = generator_web.serial_ports(core)
+        self.assertFalse(result["rf_detected"])
+        self.assertFalse(result["ports"][0]["recommended"])
+        self.assertIsNone(result["ports"][0]["rf_adapter"])
 
 
 if __name__ == "__main__":

@@ -277,13 +277,17 @@
           data.ports.forEach(port => {
             const option = document.createElement("option");
             option.value = port.device;
-            option.textContent = `${port.device} — ${port.description}${port.recommended ? "（推荐）" : ""}`;
+            const identity = port.rf_adapter ? `（${port.rf_adapter}）` : "";
+            option.textContent = `${port.device} — ${port.description}${identity}`;
             if (port.recommended) option.selected = true;
             select.appendChild(option);
           });
-          $("rfBadge").textContent = data.rf_detected ? "RF 已连接" : "发现串口，需确认";
+          const rfHosts = data.ports.filter(port => port.recommended);
+          $("rfBadge").textContent = data.rf_detected ? "RF主机已识别" : "发现其他串口";
           $("rfBadge").className = data.rf_detected ? "pill good" : "pill";
-          $("portHint").textContent = data.rf_detected ? "已检测到 CH340 类 RF 主机。" : "发现 USB 串口，但没有识别为常见 CH340 RF 主机。";
+          $("portHint").textContent = data.rf_detected
+            ? `已检测到 ${rfHosts.map(port => port.rf_adapter).join("、")}。主机识别仅表示 USB 连接正常；正式采集出现帧数后，才表示传感器正在发送数据。`
+            : "发现 USB 串口，但没有识别为支持的 WT9011DCL-RF 主机。";
         }
       } catch (error) { showError(error); }
     }
