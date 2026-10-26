@@ -44,6 +44,7 @@
     .secondary { color: var(--blue); background: var(--blue-soft); }
     .danger { color: var(--red); background: var(--red-soft); }
     .success { color: #fff; background: var(--green); }
+    .compact { padding: 5px 9px; font-size: 12px; }
     .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 4px; }
     .notice { border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.55; margin-bottom: 14px; }
     .notice.warn { background: var(--amber-soft); color: #694100; }
@@ -173,7 +174,10 @@
               <label>读数<input id="meterValue" type="number" step="any" min="0"></label>
               <label>单位<input id="meterUnit" readonly></label>
             </div>
-            <button id="saveTrial" class="success">保存本轮结果</button>
+            <div class="actions">
+              <button id="saveTrial" class="success">保存本轮结果</button>
+              <button id="discardTrial" class="danger">放弃本轮并重新测试</button>
+            </div>
           </div>
 
           <div id="resultBox" class="hidden">
@@ -190,6 +194,7 @@
               <a id="summaryCsvLink" class="button-link primary" download>下载最终汇总 CSV</a>
               <a id="rawCsvLink" class="button-link secondary" download>下载原始加速度 CSV</a>
               <a id="reportLink" class="button-link secondary" target="_blank" rel="noopener">查看本轮详情</a>
+              <button id="retestTrial" class="secondary">重新测试</button>
             </div>
           </div>
         </div>
@@ -211,7 +216,7 @@
           <tbody id="historyBody"><tr><td colspan="12">暂无数据</td></tr></tbody>
         </table>
       </div>
-      <p class="footer-note">图中每个点代表一次万用表读数。普通万用表不提供瞬时电压/电流波形；网页的实时曲线来自 WT9011DCL-RF 三轴加速度。</p>
+      <p class="footer-note">图中每个点代表一次万用表读数。普通万用表不提供瞬时电压/电流波形；网页的实时曲线来自 WT9011DCL-RF 三轴加速度。删除的试次会移入本机 <code>test_runs/.trash</code>，不再出现在历史中。</p>
     </section>
 
   </main>
@@ -398,6 +403,18 @@
       $("rawCsvLink").href = result.raw_csv_url;
     }
 
+    async function resetTrial(confirmDiscard = false) {
+      if (confirmDiscard && !window.confirm("本轮尚未保存，确定放弃并重新测试吗？")) return;
+      try {
+        const status = await api("/api/capture/discard", {method:"POST", body:"{}"});
+        $("meterValue").value = "";
+        $("meterBox").classList.add("hidden");
+        $("resultBox").classList.add("hidden");
+        clearError();
+        updateStatus(status);
+      } catch (error) { showError(error); }
+    }
+
     async function start(demo) {
       clearError();
       const payload = formPayload();
@@ -429,7 +446,7 @@
           <td>${format(record.velocity_index)} m/s</td>
           <td>${format(record.normalized)} ${escapeHtml(record.meter_unit)}/(m/s)</td>
           <td class="${record.valid ? "result-ok" : "result-bad"}">${record.valid ? "是" : "否"}</td>
-          <td><a href="${escapeHtml(record.trial_summary_url)}" download>汇总</a> · <a href="${escapeHtml(record.raw_csv_url)}" download>原始</a> · <a href="${escapeHtml(record.report_url)}" target="_blank" rel="noopener">详情</a></td></tr>`).join("")
+          <td><a href="${escapeHtml(record.trial_summary_url)}" download>汇总</a> · <a href="${escapeHtml(record.raw_csv_url)}" download>原始</a> · <a href="${escapeHtml(record.report_url)}" target="_blank" rel="noopener">详情</a> · <button class="danger compact delete-trial" data-trial="${escapeHtml(record.trial)}">删除</button></td></tr>`).join("")
           : '<tr><td colspan="12">暂无数据</td></tr>';
         drawHistory();
       } catch (error) { showError(error); }
@@ -447,10 +464,20 @@
     $("mode").onchange = updateRange; $("waveform").onchange = updateRange;
     $("startCapture").onclick = () => start(false); $("startDemo").onclick = () => start(true);
     $("stopCapture").onclick = async () => { try { updateStatus(await api("/api/capture/stop", {method:"POST", body:"{}"})); } catch (e) { showError(e); } };
+    $("discardTrial").onclick = () => resetTrial(true);
+    $("retestTrial").onclick = () => resetTrial(false);
     $("saveTrial").onclick = async () => {
       try {
         const result = await api("/api/capture/finalize", {method:"POST", body:JSON.stringify({meter_value:$("meterValue").value})});
         showResult(result); await pollStatus();
+      } catch (error) { showError(error); }
+    };
+    $("historyBody").onclick = async event => {
+      const button = event.target.closest(".delete-trial");
+      if (!button || !window.confirm("确定删除这条试次记录吗？删除后不会出现在历史中。")) return;
+      try {
+        await api("/api/history/delete", {method:"POST", body:JSON.stringify({trial:button.dataset.trial})});
+        await loadHistory();
       } catch (error) { showError(error); }
     };
     $("refreshHistory").onclick = loadHistory; $("historyMode").onchange = drawHistory;

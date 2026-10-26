@@ -3,6 +3,7 @@
 
 import json
 import mimetypes
+import shutil
 import threading
 import time
 import webbrowser
@@ -270,6 +271,21 @@ class CaptureManager:
             self.stop_event.set()
         return self.snapshot()
 
+    def discard(self):
+        with self.lock:
+            if self.state["state"] == "capturing":
+                raise ValueError("采集中请先点击停止")
+            if self.state["state"] == "saving":
+                raise ValueError("正在保存结果，暂时不能重新测试")
+            self.args = None
+            self.rows = None
+            self.capture_meta = None
+            self.demo = False
+            self.live.clear()
+            self.stop_event.clear()
+            self.state = self._initial_state()
+        return self.snapshot()
+
     def finalize(self, payload):
         meter_value = number(payload, "meter_value", None, 0.0)
         if meter_value is None:
@@ -310,6 +326,7 @@ class CaptureManager:
             relative = trial_dir.relative_to(self.output_root).as_posix()
             result = {
                 "trial_dir": str(trial_dir),
+                "trial": relative,
                 "report_url": f"/runs/{relative}/report.html",
                 "summary_url": f"/runs/{relative}/summary.json",
                 "trial_summary_url": f"/runs/{relative}/trial_summary.csv",
@@ -355,6 +372,9 @@ def history_records(output_root, limit=200):
         return records
     for path in root.rglob("summary.json"):
         try:
+            relative_path = path.relative_to(root)
+            if ".trash" in relative_path.parts:
+                continue
             data = json.loads(path.read_text(encoding="utf-8"))
             manifest = data["manifest"]
             metrics = data["metrics"]
@@ -374,6 +394,7 @@ def history_records(output_root, limit=200):
                     "velocity_index": metrics.get("velocity_index_mps"),
                     "normalized": metrics.get("normalized_meter_per_mps"),
                     "valid": metrics.get("valid"),
+                    "trial": relative,
                     "report_url": f"/runs/{relative}/report.html",
                     "trial_summary_url": f"/runs/{relative}/trial_summary.csv",
                     "raw_csv_url": f"/runs/{relative}/imu_raw.csv",
@@ -383,6 +404,23 @@ def history_records(output_root, limit=200):
             continue
     records.sort(key=lambda item: item.get("created_at") or "", reverse=True)
     return records[:limit]
+
+
+def trash_trial(output_root, relative_trial):
+    root = Path(output_root).expanduser().resolve()
+    relative = Path(str(relative_trial or "").strip())
+    if not str(relative_trial or "").strip() or relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("试次路径无效")
+    trial_dir = (root / relative).resolve()
+    if root not in trial_dir.parents or ".trash" in trial_dir.relative_to(root).parts:
+        raise ValueError("试次路径超出数据目录")
+    if not trial_dir.is_dir() or not (trial_dir / "manifest.json").is_file() or not (trial_dir / "summary.json").is_file():
+        raise ValueError("找不到可删除的完整试次")
+    trash_root = root / ".trash"
+    trash_root.mkdir(parents=True, exist_ok=True)
+    target = trash_root / f"{time.strftime('%Y%m%d_%H%M%S')}_{time.time_ns()}_{trial_dir.name}"
+    shutil.move(str(trial_dir), str(target))
+    return {"deleted": relative.as_posix(), "recoverable_at": str(target)}
 
 
 def build_handler(core, manager, index_path):
@@ -459,8 +497,14 @@ def build_handler(core, manager, index_path):
                     self.send_json(manager.start(payload, demo=True))
                 elif path == "/api/capture/stop":
                     self.send_json(manager.stop())
+                elif path == "/api/capture/discard":
+                    self.send_json(manager.discard())
                 elif path == "/api/capture/finalize":
                     self.send_json(manager.finalize(payload))
+                elif path == "/api/history/delete":
+                    result = trash_trial(manager.output_root, payload.get("trial"))
+                    result["records"] = history_records(manager.output_root)
+                    self.send_json(result)
                 else:
                     self.send_error(404)
             except (ValueError, json.JSONDecodeError) as exc:

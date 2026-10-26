@@ -70,6 +70,39 @@ class WebValidationTests(unittest.TestCase):
             self.assertIsNotNone(records[0]["normalized"])
             self.assertTrue(records[0]["trial_summary_url"].endswith("/trial_summary.csv"))
 
+    def test_discard_unsaved_capture_resets_without_history(self):
+        with tempfile.TemporaryDirectory() as root:
+            manager = generator_web.CaptureManager(generator_test, root)
+            manager.start(demo_payload(), demo=True)
+            deadline = time.monotonic() + 3
+            while manager.snapshot()["state"] == "capturing" and time.monotonic() < deadline:
+                time.sleep(0.02)
+            self.assertEqual(manager.snapshot()["state"], "awaiting_meter")
+            status = manager.discard()
+            self.assertEqual(status["state"], "idle")
+            self.assertEqual(status["sample_count"], 0)
+            self.assertEqual(generator_web.history_records(root), [])
+
+    def test_saved_trial_moves_to_recoverable_trash(self):
+        with tempfile.TemporaryDirectory() as root:
+            manager = generator_web.CaptureManager(generator_test, root)
+            manager.start(demo_payload(), demo=True)
+            deadline = time.monotonic() + 3
+            while manager.snapshot()["state"] == "capturing" and time.monotonic() < deadline:
+                time.sleep(0.02)
+            result = manager.finalize({"meter_value": 5.16})
+            deleted = generator_web.trash_trial(root, result["trial"])
+            self.assertEqual(deleted["deleted"], result["trial"])
+            self.assertEqual(generator_web.history_records(root), [])
+            recovery = Path(deleted["recoverable_at"])
+            self.assertTrue(recovery.is_dir())
+            self.assertTrue((recovery / "summary.json").is_file())
+
+    def test_trash_rejects_path_outside_output_root(self):
+        with tempfile.TemporaryDirectory() as root:
+            with self.assertRaisesRegex(ValueError, "路径无效"):
+                generator_web.trash_trial(root, "../outside")
+
 
 class SerialPortDetectionTests(unittest.TestCase):
     def test_marks_nrf52_adapter_as_detected_rf_host(self):
