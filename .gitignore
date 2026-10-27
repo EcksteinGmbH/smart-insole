@@ -15,6 +15,9 @@ test_runs/
 # Claude Code per-user local settings
 .claude/settings.local.json
 
+# Codex rolling session checkpoints
+.codex/checkpoints/
+
 # Editor / OS
 *.swp
 *~
