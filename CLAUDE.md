@@ -11,6 +11,8 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - `docs/开发文档.md` — 开发文档（每次重要改动后同步更新 §8 变更记录 / §10 待办）
 - `docs/问题记录.md` — 问题清单（`ISS-xxx` 编号、状态、证据、方案）；**发现新问题先记到这里**，修复后更新状态和处理记录
 - `firmware_backup/` — 出厂固件整片 flash 备份（`esptool write_flash 0 <bin>` 可恢复），勿删
+- `releases/` — 已验证、可交付的固件发布包；每版含完整镜像、应用镜像、校验值和说明
+- `source_packages/` — 用户提供的原始源码压缩包（ZIP 仅本机保存，不覆盖 `firmware/`）
 - `tools/capture.sh` — 非交互串口日志抓取
 - `tools/ble_test.sh` — BLE 主机端测试（scan / cmd / selftest / stream），venv 在 `tools/.venv`
 - `tools/generator_test.sh` — 线性发电机工作站（本地网页 / WT9011DCL-RF 采集 / 分析 / 单次结果归档）
