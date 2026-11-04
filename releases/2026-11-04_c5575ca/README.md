@@ -21,3 +21,5 @@ esptool.py --chip esp32c3 -p /dev/ttyACM0 write_flash 0x0 smart-insole_2026-11-0
 ```
 
 刷机前可在本目录执行 `sha256sum -c SHA256SUMS.txt` 检查文件完整性。
+
+本次真机烧录和功能检查结果见 [`烧录测试结果_2026-11-04.md`](烧录测试结果_2026-11-04.md)。
