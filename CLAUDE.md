@@ -15,6 +15,7 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - `source_packages/` — 用户提供的原始源码压缩包（ZIP 仅本机保存，不覆盖 `firmware/`）
 - `tools/capture.sh` — 非交互串口日志抓取
 - `tools/ble_test.sh` — BLE 主机端测试（scan / cmd / selftest / stream），venv 在 `tools/.venv`
+- `tools/package_firmware.sh` — 将 `firmware/build/` 的可交付产物按构建时间和版本归档到 `releases/`
 - `tools/generator_test.sh` — 线性发电机工作站（本地网页 / WT9011DCL-RF 采集 / 分析 / 单次结果归档）
 - `.mcp.json` — 项目级 MCP：`espressif-docs`（官方芯片/IDF 文档，已认证；工具 search_espressif_sources，有限额，单次聚焦查询）
 - `logs/` — 抓取的日志
@@ -29,6 +30,7 @@ ESP32-C3-MINI（RISC-V，单核，4MB flash）+ 2×LSM6DS3TR-C（I2C 0x6A/0x6B�
 - 烧录：`idf.py -p /dev/ttyACM0 flash` —— **烧录前必须征得用户同意**（`.claude/settings.local.json` 仅放行这一条命令的原样写法）
 - 日志（根目录）：`tools/capture.sh <秒> [正则] [--no-reset]`（超时退出码 110）
 - BLE（根目录）：`tools/ble_test.sh --address 30:ED:A0:80:9A:6E selftest`（全局参数放子命令前）
+- 固件归档（根目录）：`tools/package_firmware.sh`（不整理 `firmware/build/` 本身；已有同名归档拒绝覆盖）
 - 发电机网页工作站（根目录）：`tools/generator_test.sh web`（默认打开 `http://127.0.0.1:8765`；流程见 `docs/线性发电机测试工作站.md`）
 - JTAG：后台 `idf.py openocd`，再 `riscv32-esp-elf-gdb -batch -ex "target extended-remote :3333" -ex "mon reset halt" ... build/xrs_code.elf`
 

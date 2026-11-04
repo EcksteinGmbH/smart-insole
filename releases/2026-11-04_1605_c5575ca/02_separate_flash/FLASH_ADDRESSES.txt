@@ -1,0 +1,3 @@
+0x00000000  bootloader.bin
+0x00008000  partition-table.bin
+0x00010000  smart-insole_app.bin
